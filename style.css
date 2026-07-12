@@ -8,6 +8,8 @@
   --primary-tint: #E4EFEE;
   --accent: #E29A3C;
   --accent-tint: #FBEBD3;
+  --urgent: #B2543A;
+  --urgent-tint: #F5E6DE;
   --border: #E8E1D3;
   --radius-lg: 20px;
   --radius-md: 14px;
@@ -52,20 +54,31 @@ button { font-family: inherit; cursor: pointer; }
   align-items: center;
   gap: 8px;
 }
+.logo-block {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
 .logo {
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: 26px;
+  font-size: 24px;
   margin: 0;
   letter-spacing: 0.5px;
+  line-height: 1.2;
 }
-.logo-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--accent);
-  margin-inline-start: 2px;
-  margin-top: 6px;
+.logo-ai {
+  font-family: var(--font-body);
+  color: var(--accent);
+  font-weight: 900;
+  font-size: 16px;
+}
+.logo-sub {
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: rgba(255,255,255,0.8);
+  margin: 0;
+  font-weight: 500;
 }
 .back-btn {
   background: rgba(255,255,255,0.14);
@@ -126,6 +139,8 @@ main#app {
   height: 1px;
   background: var(--border);
 }
+.section-title--urgent { color: var(--urgent); }
+.section-title--urgent::after { background: rgba(178, 84, 58, 0.25); }
 
 .domain-grid {
   display: grid;
@@ -164,6 +179,34 @@ main#app {
   font-size: 12px;
   color: var(--ink-soft);
 }
+.domain-card--urgent {
+  border-color: rgba(178, 84, 58, 0.35);
+  background: linear-gradient(180deg, var(--paper) 70%, var(--urgent-tint) 130%);
+}
+.domain-card--urgent .domain-card__icon {
+  background: var(--urgent-tint);
+}
+.domain-card--urgent .domain-card__name {
+  color: var(--urgent);
+}
+
+/* ===== شريط الوصول السريع للطوارئ ===== */
+.quick-access {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--urgent-tint);
+  border: 1px solid rgba(178, 84, 58, 0.25);
+  border-radius: var(--radius-md);
+  padding: 11px 16px;
+  margin-bottom: 18px;
+  color: var(--urgent);
+  font-weight: 700;
+  font-size: 13.5px;
+}
+.quick-access svg { flex-shrink: 0; }
+.quick-access span { flex: 1; }
+.quick-access__arrow { font-size: 16px; }
 
 /* ===== قوائم الأدلة ===== */
 .guide-list { display: flex; flex-direction: column; gap: 10px; }

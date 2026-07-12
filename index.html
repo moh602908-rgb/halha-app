@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>حلّها — حلول عملية لمشاكل يومك</title>
-<meta name="description" content="حلّها: أدلة عملية خطوة بخطوة لأكثر مشاكل الحياة اليومية شيوعًا، بالعربية." />
+<title>دلّني AI — حلول ذكية للحياة اليومية</title>
+<meta name="description" content="دلّني AI: أدلة عملية ومساعد ذكي لحل أكثر مشاكل الحياة اليومية شيوعًا، بالعربية." />
 <meta name="theme-color" content="#0F5257" />
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" href="icon.svg" type="image/svg+xml" />
@@ -20,8 +20,10 @@
     <button class="back-btn" id="backBtn" aria-label="رجوع" hidden>
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 5L8 12L15 19" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
-    <h1 class="logo">حلّها</h1>
-    <span class="logo-dot" aria-hidden="true"></span>
+    <div class="logo-block">
+      <h1 class="logo">دلّني <span class="logo-ai">AI</span></h1>
+      <p class="logo-sub">حلول ذكية للحياة اليومية</p>
+    </div>
   </div>
 </header>
 
@@ -35,7 +37,7 @@
 <div class="sheet-overlay" id="sheetOverlay"></div>
 <section class="sheet" id="assistantSheet" aria-hidden="true">
   <div class="sheet__handle"></div>
-  <h2 class="sheet__title">مساعد حلّها</h2>
+  <h2 class="sheet__title">مساعد دلّني</h2>
   <p class="sheet__note">هذه الميزة قيد التفعيل حاليًا. في هذه المرحلة، جرّب البحث عن مشكلتك في الأدلة الجاهزة أعلاه — نضيف الأسئلة الحية قريبًا.</p>
   <button class="btn btn--primary" id="sheetCloseBtn">حسنًا، فهمت</button>
 </section>

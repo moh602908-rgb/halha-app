@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>حلّها — حلول عملية لمشاكل يومك</title>
+<meta name="description" content="حلّها: أدلة عملية خطوة بخطوة لأكثر مشاكل الحياة اليومية شيوعًا، بالعربية." />
+<meta name="theme-color" content="#0F5257" />
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="icon.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&family=Aref+Ruqaa:wght@700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar__inner">
+    <button class="back-btn" id="backBtn" aria-label="رجوع" hidden>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 5L8 12L15 19" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <h1 class="logo">حلّها</h1>
+    <span class="logo-dot" aria-hidden="true"></span>
+  </div>
+</header>
+
+<main id="app"></main>
+
+<button class="fab" id="assistantFab">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 2C6.48 2 2 5.94 2 10.8c0 2.77 1.47 5.23 3.78 6.85-.12.9-.5 2.5-1.53 3.9 0 0 2.55-.28 4.6-1.87 1 .27 2.06.42 3.15.42 5.52 0 10-3.94 10-8.8S17.52 2 12 2Z" fill="currentColor"/></svg>
+  <span>اسأل المساعد</span>
+</button>
+
+<div class="sheet-overlay" id="sheetOverlay"></div>
+<section class="sheet" id="assistantSheet" aria-hidden="true">
+  <div class="sheet__handle"></div>
+  <h2 class="sheet__title">مساعد حلّها</h2>
+  <p class="sheet__note">هذه الميزة قيد التفعيل حاليًا. في هذه المرحلة، جرّب البحث عن مشكلتك في الأدلة الجاهزة أعلاه — نضيف الأسئلة الحية قريبًا.</p>
+  <button class="btn btn--primary" id="sheetCloseBtn">حسنًا، فهمت</button>
+</section>
+
+<script src="app.js"></script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>

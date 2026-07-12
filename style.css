@@ -1,0 +1,329 @@
+:root {
+  --bg: #FBF7F0;
+  --paper: #FFFFFF;
+  --ink: #201D18;
+  --ink-soft: #6B655A;
+  --primary: #0F5257;
+  --primary-dark: #0A3A3E;
+  --primary-tint: #E4EFEE;
+  --accent: #E29A3C;
+  --accent-tint: #FBEBD3;
+  --border: #E8E1D3;
+  --radius-lg: 20px;
+  --radius-md: 14px;
+  --radius-sm: 9px;
+  --shadow: 0 6px 20px rgba(32, 29, 24, 0.07);
+  --font-display: "Aref Ruqaa", serif;
+  --font-body: "Tajawal", sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  padding-bottom: 96px;
+  min-height: 100vh;
+}
+
+button { font-family: inherit; cursor: pointer; }
+
+/* ===== شريط علوي ===== */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--primary);
+  color: #fff;
+  padding: 14px 18px;
+  box-shadow: 0 2px 10px rgba(10,58,62,0.25);
+}
+.topbar__inner {
+  max-width: 720px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.logo {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 26px;
+  margin: 0;
+  letter-spacing: 0.5px;
+}
+.logo-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  margin-inline-start: 2px;
+  margin-top: 6px;
+}
+.back-btn {
+  background: rgba(255,255,255,0.14);
+  border: none;
+  color: #fff;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-inline-end: 4px;
+}
+
+/* ===== حاوية المحتوى ===== */
+main#app {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 20px 16px 40px;
+}
+
+/* ===== البحث ===== */
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 13px 16px;
+  box-shadow: var(--shadow);
+  margin-bottom: 22px;
+}
+.search-box input {
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: var(--font-body);
+  font-size: 15px;
+  flex: 1;
+  color: var(--ink);
+}
+.search-box svg { flex-shrink: 0; color: var(--ink-soft); }
+
+/* ===== شبكة المجالات ===== */
+.section-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  margin: 26px 4px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-title::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.domain-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+.domain-card {
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 18px 14px;
+  text-align: center;
+  box-shadow: var(--shadow);
+  transition: transform .15s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.domain-card:active { transform: scale(0.97); }
+.domain-card__icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--primary-tint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+}
+.domain-card__name {
+  font-weight: 700;
+  font-size: 15px;
+}
+.domain-card__count {
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+/* ===== قوائم الأدلة ===== */
+.guide-list { display: flex; flex-direction: column; gap: 10px; }
+.guide-row {
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: var(--shadow);
+}
+.guide-row__index {
+  font-family: var(--font-display);
+  font-size: 20px;
+  color: var(--accent);
+  font-weight: 700;
+  min-width: 26px;
+  text-align: center;
+}
+.guide-row__title { font-weight: 500; font-size: 14.5px; flex: 1; line-height: 1.5; }
+.guide-row__badge {
+  font-size: 11px;
+  color: var(--ink-soft);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 3px 9px;
+  white-space: nowrap;
+}
+.guide-row__badge--ready { color: var(--primary); border-color: var(--primary-tint); background: var(--primary-tint); }
+
+/* ===== صفحة الدليل ===== */
+.guide-header {
+  margin-bottom: 18px;
+}
+.guide-header__domain {
+  font-size: 13px;
+  color: var(--primary);
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.guide-header__title {
+  font-family: var(--font-display);
+  font-size: 24px;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.step-card {
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: flex;
+  gap: 14px;
+  margin-bottom: 12px;
+  box-shadow: var(--shadow);
+}
+.step-card__num {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: var(--primary);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+}
+.step-card__text { font-size: 14.5px; line-height: 1.9; }
+
+.callout {
+  background: var(--accent-tint);
+  border-inline-start: 4px solid var(--accent);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  font-size: 13.5px;
+  line-height: 1.8;
+  margin-top: 6px;
+  color: #5A4420;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 50px 20px;
+  color: var(--ink-soft);
+}
+.empty-state__icon { font-size: 40px; margin-bottom: 12px; }
+
+/* ===== أزرار عامة ===== */
+.btn {
+  display: block;
+  width: 100%;
+  text-align: center;
+  padding: 13px 18px;
+  border-radius: var(--radius-md);
+  border: none;
+  font-weight: 700;
+  font-size: 14.5px;
+}
+.btn--primary { background: var(--primary); color: #fff; }
+.btn--outline { background: transparent; color: var(--primary); border: 1.5px solid var(--primary); margin-top: 10px; }
+
+/* ===== زر المساعد العائم ===== */
+.fab {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--primary-dark);
+  color: #fff;
+  border: none;
+  border-radius: 30px;
+  padding: 13px 22px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 8px 22px rgba(10,58,62,0.35);
+  font-weight: 700;
+  font-size: 14px;
+  z-index: 25;
+}
+
+/* ===== الشيت السفلي للمساعد ===== */
+.sheet-overlay {
+  position: fixed; inset: 0;
+  background: rgba(20,18,14,0.45);
+  opacity: 0; pointer-events: none;
+  transition: opacity .2s ease;
+  z-index: 30;
+}
+.sheet-overlay.open { opacity: 1; pointer-events: auto; }
+
+.sheet {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: var(--paper);
+  border-radius: 22px 22px 0 0;
+  padding: 10px 22px 26px;
+  max-width: 720px;
+  margin: 0 auto;
+  transform: translateY(110%);
+  transition: transform .25s ease;
+  z-index: 31;
+  box-shadow: 0 -10px 30px rgba(0,0,0,0.15);
+}
+.sheet.open { transform: translateY(0); }
+.sheet__handle {
+  width: 40px; height: 4px;
+  background: var(--border);
+  border-radius: 4px;
+  margin: 8px auto 18px;
+}
+.sheet__title { font-family: var(--font-display); font-size: 20px; margin: 0 0 10px; }
+.sheet__note { font-size: 14px; line-height: 1.8; color: var(--ink-soft); margin-bottom: 18px; }
+
+@media (min-width: 720px) {
+  .domain-grid { grid-template-columns: repeat(3, 1fr); }
+}

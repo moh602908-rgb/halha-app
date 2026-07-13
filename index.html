@@ -37,9 +37,21 @@
 <div class="sheet-overlay" id="sheetOverlay"></div>
 <section class="sheet" id="assistantSheet" aria-hidden="true">
   <div class="sheet__handle"></div>
-  <h2 class="sheet__title">مساعد دلّني</h2>
-  <p class="sheet__note">هذه الميزة قيد التفعيل حاليًا. في هذه المرحلة، جرّب البحث عن مشكلتك في الأدلة الجاهزة أعلاه — نضيف الأسئلة الحية قريبًا.</p>
-  <button class="btn btn--primary" id="sheetCloseBtn">حسنًا، فهمت</button>
+  <div class="sheet__header">
+    <h2 class="sheet__title">مساعد دلّني</h2>
+    <span class="sheet__quota" id="quotaBadge"></span>
+  </div>
+  <div class="chat-messages" id="chatMessages">
+    <div class="chat-bubble chat-bubble--bot">
+      أهلًا 👋 اسألني عن أي مشكلة يومية وسأحاول مساعدتك مباشرة.
+    </div>
+  </div>
+  <form class="chat-form" id="chatForm">
+    <input type="text" id="chatInput" placeholder="اكتب سؤالك هنا..." autocomplete="off" />
+    <button type="submit" class="chat-send" id="chatSend" aria-label="إرسال">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 12H20M20 12L14 6M20 12L14 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </form>
 </section>
 
 <script src="app.js"></script>

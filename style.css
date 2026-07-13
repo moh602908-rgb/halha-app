@@ -463,3 +463,11 @@ main#app {
 @media (min-width: 720px) {
   .domain-grid { grid-template-columns: repeat(3, 1fr); }
 }
+
+.app-footer {
+  text-align: center;
+  font-size: 11px;
+  color: var(--ink-soft);
+  padding: 4px 0 100px;
+  opacity: 0.7;
+}

@@ -1900,7 +1900,7 @@ const DOMAINS = [
   {
     id: "gardening",
     name: "الزراعة المنزلية والنباتات",
-    icon: "🌱",
+    icon: "🪴",
     guides: [
       {
         title: "أسباب اصفرار أوراق النبات المنزلي",
@@ -2076,6 +2076,209 @@ const backBtn = document.getElementById("backBtn");
 
 let currentView = { name: "home" };
 
+/* ============================================================
+   محرك بحث عربي ذكي — يعمل بالكامل محليًا دون إنترنت أو أي خدمة خارجية
+   ============================================================
+   يوفر:
+   - تطبيع الكتابة العربية (الهمزات، التاء المربوطة، الألف المقصورة، التشكيل).
+   - مرادفات شائعة لأكثر المصطلحات استخدامًا في المحتوى.
+   - بحثًا تقريبيًا (Levenshtein) يتسامح مع خطأ إملائي بسيط أو اثنين.
+   - ترتيب النتائج حسب درجة تطابق، مع عرض "أقرب النتائج" دائمًا
+     بدل رسالة "لا توجد نتائج" ما دام هناك أي تشابه ولو بسيط.
+   يُستخدم من صفحة البحث الرئيسية ومن نافذة "مساعد دلّني" معًا،
+   تفاديًا لتكرار نفس منطق البحث في مكانين.
+   ============================================================ */
+
+const SEARCH_SYNONYMS = {
+  "جوال": ["هاتف", "موبايل", "تليفون", "موبايل"],
+  "موبايل": ["هاتف", "جوال", "تليفون"],
+  "تليفون": ["هاتف", "جوال", "موبايل"],
+  "نت": ["انترنت", "واي فاي", "الشبكة"],
+  "انترنت": ["نت", "واي فاي"],
+  "واي فاي": ["انترنت", "نت", "الشبكة"],
+  "فلوس": ["مال", "نقود", "مصاري", "كاش"],
+  "مصاري": ["مال", "نقود", "فلوس", "كاش"],
+  "كاش": ["مال", "نقود", "فلوس"],
+  "نقود": ["مال", "فلوس", "مصاري"],
+  "عربية": ["سيارة"],
+  "كاره": ["سيارة"],
+  "دكتور": ["طبيب"],
+  "طبيب": ["دكتور"],
+  "شغل": ["عمل", "وظيفة"],
+  "وظيفة": ["عمل", "شغل"],
+  "عمل": ["شغل", "وظيفة"],
+  "بيت": ["منزل", "دار"],
+  "دار": ["منزل", "بيت"],
+  "ولد": ["طفل", "ابن"],
+  "بنت": ["طفلة", "ابنة"],
+  "ماما": ["ام", "والدة"],
+  "بابا": ["اب", "والد"],
+  "راتب": ["معاش", "اجر"],
+  "معاش": ["راتب"],
+  "ميزانية": ["ميزانيه", "مصاريف", "مصروف"],
+  "مصروف": ["مصاريف", "ميزانية"],
+  "كهرباء": ["كهربا", "نور"],
+  "نور": ["كهرباء"],
+  "غاز": ["بوتاجاز"],
+  "قهوة": ["كوفي"],
+  "دراسة": ["مذاكرة", "تعليم"],
+  "مذاكرة": ["دراسة", "تعليم"],
+  "امتحان": ["اختبار"],
+  "اختبار": ["امتحان"],
+  "قلق": ["توتر", "خوف"],
+  "توتر": ["قلق", "ضغط نفسي"],
+  "زحمة": ["ضغط", "انشغال"],
+  "قطة": ["قط", "كتكوت"],
+  "كلب": ["جرو"],
+  "نبات": ["نباتات", "زرع"],
+  "زرع": ["نبات", "زراعة"],
+  "انترنت بطيء": ["واي فاي بطيء"],
+  "تعب": ["ارهاق", "اجهاد"],
+  "ارهاق": ["تعب", "اجهاد"],
+  "صداع": ["وجع راس"],
+  "معدة": ["بطن"],
+  "غسالة": ["غساله"],
+  "ثلاجة": ["فريزر", "براد"],
+  "براد": ["ثلاجة"]
+};
+
+function normalizeArabic(str) {
+  if (!str) return "";
+  return String(str)
+    .replace(/[\u064B-\u0652\u0670\u0640]/g, "") // إزالة التشكيل والتطويل
+    .replace(/[أإآٱ]/g, "ا")
+    .replace(/ى/g, "ي")
+    .replace(/ؤ/g, "و")
+    .replace(/ئ/g, "ي")
+    .replace(/ة/g, "ه")
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s]/gu, " ") // إزالة علامات ترقيم دون كسر الأرقام/الحروف
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function expandQueryTokens(tokens) {
+  const expanded = new Set(tokens);
+  tokens.forEach(t => {
+    const syns = SEARCH_SYNONYMS[t];
+    if (syns) syns.forEach(s => expanded.add(normalizeArabic(s)));
+  });
+  return [...expanded];
+}
+
+// مسافة Levenshtein — لقياس مدى تشابه كلمتين رغم فرق حرف أو حرفين (خطأ إملائي بسيط)
+function levenshtein(a, b) {
+  if (a === b) return 0;
+  const la = a.length, lb = b.length;
+  if (la === 0) return lb;
+  if (lb === 0) return la;
+  let prev = new Array(lb + 1);
+  for (let j = 0; j <= lb; j++) prev[j] = j;
+  for (let i = 1; i <= la; i++) {
+    const curr = [i];
+    for (let j = 1; j <= lb; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      curr[j] = Math.min(prev[j] + 1, curr[j - 1] + 1, prev[j - 1] + cost);
+    }
+    prev = curr;
+  }
+  return prev[lb];
+}
+
+// فهرس بحث مبني مرة واحدة فقط (وليس عند كل ضغطة زر) لأسرع أداء ممكن
+let SEARCH_INDEX = null;
+function buildSearchIndexOnce() {
+  if (SEARCH_INDEX) return SEARCH_INDEX;
+  SEARCH_INDEX = [];
+  DOMAINS.forEach(d => {
+    const domainTextNorm = normalizeArabic(d.name);
+    d.guides.forEach((g, i) => {
+      const titleNorm = normalizeArabic(g.title);
+      SEARCH_INDEX.push({
+        domain: d,
+        guide: g,
+        index: i,
+        titleNorm,
+        titleTokens: titleNorm.split(" ").filter(Boolean),
+        domainTextNorm
+      });
+    });
+  });
+  return SEARCH_INDEX;
+}
+
+function scoreEntry(entry, queryNorm, queryTokens) {
+  let score = 0;
+
+  // تطابق تام أو شبه تام للعنوان كاملاً — أعلى وزن ممكن
+  if (entry.titleNorm === queryNorm) score += 20;
+  else if (entry.titleNorm.includes(queryNorm)) score += 10;
+
+  queryTokens.forEach(qt => {
+    if (qt.length < 2) return;
+    let bestTokenScore = 0;
+
+    entry.titleTokens.forEach(tt => {
+      if (tt === qt) bestTokenScore = Math.max(bestTokenScore, 6);
+      else if (tt.startsWith(qt) || qt.startsWith(tt)) bestTokenScore = Math.max(bestTokenScore, 4);
+      else if (qt.length >= 3 && tt.includes(qt)) bestTokenScore = Math.max(bestTokenScore, 2.5);
+      else if (qt.length >= 4 && tt.length >= 4) {
+        // تسامح مع خطأ إملائي بسيط، فقط لكلمات 4 أحرف فأكثر من الطرفين، لتفادي
+        // تطابقات عشوائية شائعة بين الكلمات القصيرة جدًا في العربية (كلمتان من
+        // 3 أحرف قد تختلفان بحرف واحد فقط رغم اختلاف معناهما تمامًا).
+        const dist = levenshtein(qt, tt);
+        const maxLen = Math.max(qt.length, tt.length);
+        const allowed = Math.max(1, Math.floor(maxLen * 0.25));
+        if (dist <= allowed) bestTokenScore = Math.max(bestTokenScore, 3 * (1 - dist / maxLen));
+      }
+    });
+
+    if (bestTokenScore === 0 && qt.length >= 3 && entry.domainTextNorm.includes(qt)) bestTokenScore = 1.5;
+    score += bestTokenScore;
+  });
+
+  return score;
+}
+
+function searchGuides(rawQuery, limit) {
+  const queryNorm = normalizeArabic(rawQuery);
+  if (!queryNorm) return { results: [], exact: true };
+
+  const queryTokens = expandQueryTokens(queryNorm.split(" ").filter(Boolean));
+  const index = buildSearchIndexOnce();
+
+  const scored = index
+    .map(entry => ({ entry, score: scoreEntry(entry, queryNorm, queryTokens) }))
+    .filter(s => s.score > 0)
+    .sort((a, b) => b.score - a.score);
+
+  if (scored.length === 0) return { results: [], exact: false };
+
+  // نتجاهل ذيل النتائج الضعيفة جدًا مقارنة بأفضل نتيجة (ضوضاء غير مفيدة)،
+  // مع ضمان عرض 5 نتائج على الأقل دائمًا إن وُجدت لإتاحة خيارات كافية للمستخدم.
+  const topScore = scored[0].score;
+  const noiseFloor = Math.max(topScore * 0.22, 1);
+  const filtered = scored.filter((s, i) => i < 5 || s.score >= noiseFloor);
+
+  const top = filtered.slice(0, limit || 15);
+  // "تطابق جيد" إن كانت أعلى نتيجة قوية بما يكفي، وإلا فهي "أقرب النتائج" فقط
+  const exact = top.length > 0 && top[0].score >= 6;
+
+  return {
+    results: top.map(s => ({ domain: s.entry.domain, guide: s.entry.guide, index: s.entry.index })),
+    exact
+  };
+}
+
+// تأخير بسيط (Debounce) لتفادي إعادة الحساب مع كل ضغطة زر بسرعة كبيرة جدًا
+function debounce(fn, delay) {
+  let timer = null;
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), delay);
+  };
+}
+
 function render() {
   if (currentView.name === "home") return renderHome();
   if (currentView.name === "domain") return renderDomain(currentView.domainId);
@@ -2086,12 +2289,33 @@ function renderHome() {
   backBtn.hidden = true;
   const emergency = DOMAINS.find(d => d.urgent);
 
+  // القالب الثابت (Shell) يُرسم مرة واحدة فقط. حقل البحث هنا لا يُعاد إنشاؤه
+  // أبدًا أثناء الكتابة — هذا هو الإصلاح الجذري لمشكلة فقدان التركيز
+  // (Focus) التي كانت تحدث سابقًا لأن كل ضغطة زر كانت تعيد بناء appEl.innerHTML
+  // بالكامل، فتُنشئ عنصر input جديدًا وتفقد المتصفح تركيزه على القديم.
   appEl.innerHTML = `
     <div class="search-box">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M21 21L16.65 16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      <input type="text" id="searchInput" placeholder="اكتب مشكلتك... مثال: تسرب ماء" />
+      <input type="text" id="searchInput" placeholder="اكتب مشكلتك... مثال: تسرب ماء" autocomplete="off" />
     </div>
+    <div id="homeContent"></div>
+  `;
 
+  renderBrowseContent();
+
+  const searchInput = document.getElementById("searchInput");
+  const debouncedSearch = debounce((q) => {
+    if (!q) { renderBrowseContent(); return; }
+    runSearch(q);
+  }, 90);
+  searchInput.addEventListener("input", (e) => debouncedSearch(e.target.value.trim()));
+}
+
+function renderBrowseContent() {
+  const emergency = DOMAINS.find(d => d.urgent);
+  const homeContent = document.getElementById("homeContent");
+
+  homeContent.innerHTML = `
     ${emergency ? `
     <button class="quick-access" id="quickEmergency">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 2L1 21H23L12 2Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 9V13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="16.5" r="0.9" fill="currentColor"/></svg>
@@ -2129,37 +2353,28 @@ function renderHome() {
     const firstReady = d.guides.findIndex(g => g.ready);
     if (firstReady !== -1) readyList.appendChild(buildGuideRow(d, d.guides[firstReady], firstReady));
   });
-
-  document.getElementById("searchInput").addEventListener("input", (e) => {
-    const q = e.target.value.trim();
-    if (!q) { render(); return; }
-    runSearch(q);
-  });
 }
 
 function runSearch(query) {
-  const results = [];
-  DOMAINS.forEach(d => {
-    d.guides.forEach((g, i) => {
-      if (g.title.includes(query)) results.push({ domain: d, guide: g, index: i });
-    });
-  });
+  const homeContent = document.getElementById("homeContent");
+  if (!homeContent) return; // المستخدم غادر الصفحة الرئيسية أثناء التأخير القصير للبحث
 
-  appEl.innerHTML = `
-    <div class="search-box">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M21 21L16.65 16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      <input type="text" id="searchInput" placeholder="اكتب مشكلتك..." value="${query}" />
-    </div>
-    <div class="section-title">نتائج البحث (${results.length})</div>
+  const { results, exact } = searchGuides(query, 15);
+
+  const label = results.length === 0
+    ? "نتائج البحث"
+    : exact ? `نتائج البحث (${results.length})` : `أقرب النتائج المرتبطة بحثك (${results.length})`;
+
+  homeContent.innerHTML = `
+    <div class="section-title">${label}</div>
     <div class="guide-list" id="searchResults"></div>
   `;
   const list = document.getElementById("searchResults");
   if (results.length === 0) {
-    list.innerHTML = `<div class="empty-state"><div class="empty-state__icon">🔎</div>لا توجد نتيجة مطابقة بعد.<br/>جرّب مساعد دلّني أو تصفّح المجالات.</div>`;
+    list.innerHTML = `<div class="empty-state"><div class="empty-state__icon">🔎</div>لم نجد ما يطابق بحثك تمامًا.<br/>جرّب كلمة أخرى، أو تصفّح المجالات من مساعد دلّني.</div>`;
   } else {
     results.forEach(r => list.appendChild(buildGuideRow(r.domain, r.guide, r.index)));
   }
-  document.getElementById("searchInput").addEventListener("input", (e) => runSearch(e.target.value.trim()));
 }
 
 function buildGuideRow(domain, guide, index) {
@@ -2297,31 +2512,29 @@ function renderQuickAccessList() {
 }
 
 function renderAssistantSearchResults(query) {
-  const results = [];
-  DOMAINS.forEach(d => {
-    d.guides.forEach((g, i) => {
-      if (g.title.includes(query)) results.push({ domain: d, guide: g, index: i });
-    });
-  });
+  const { results, exact } = searchGuides(query, 20);
 
-  assistantListLabel.textContent = `نتائج البحث (${results.length})`;
+  assistantListLabel.textContent = results.length === 0
+    ? "نتائج البحث"
+    : exact ? `نتائج البحث (${results.length})` : `أقرب النتائج المرتبطة بحثك (${results.length})`;
+
   assistantQuickList.innerHTML = "";
   if (results.length === 0) {
-    assistantQuickList.innerHTML = `<div class="empty-state"><div class="empty-state__icon">🔎</div>لا توجد نتيجة مطابقة بعد.</div>`;
+    assistantQuickList.innerHTML = `<div class="empty-state"><div class="empty-state__icon">🔎</div>لم نجد ما يطابق بحثك تمامًا. جرّب كلمة أخرى.</div>`;
     return;
   }
-  results.slice(0, 20).forEach(r => {
+  results.forEach(r => {
     const row = buildGuideRow(r.domain, r.guide, r.index);
     row.onclick = () => goToGuideAndCloseSheet(r.domain.id, r.index);
     assistantQuickList.appendChild(row);
   });
 }
 
-assistantSearchInput.addEventListener("input", (e) => {
-  const q = e.target.value.trim();
+const debouncedAssistantSearch = debounce((q) => {
   if (!q) { renderQuickAccessList(); return; }
   renderAssistantSearchResults(q);
-});
+}, 90);
+assistantSearchInput.addEventListener("input", (e) => debouncedAssistantSearch(e.target.value.trim()));
 
 function openSheet() {
   overlay.classList.add("open");

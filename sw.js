@@ -3,7 +3,7 @@
    وإلا فلن يكتشف المتصفح وجود نسخة جديدة، وستبقى النسخة القديمة معروضة
    للمستخدمين رغم نجاح الرفع على GitHub وVercel. */
 
-const APP_VERSION = "v1.1.0";
+const APP_VERSION = "v1.2.0";
 const CACHE_NAME = `dallini-cache-${APP_VERSION}`;
 
 const FILES_TO_CACHE = [
@@ -12,7 +12,11 @@ const FILES_TO_CACHE = [
   "./style.css",
   "./app.js",
   "./manifest.json",
-  "./icon.svg"
+  "./icon.svg",
+  "./icon-180.png",
+  "./icon-192.png",
+  "./icon-512.png",
+  "./icon-512-maskable.png"
 ];
 
 self.addEventListener("install", (event) => {

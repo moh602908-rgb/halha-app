@@ -2502,6 +2502,8 @@ function goToGuideAndCloseSheet(domainId, guideIndex) {
 function renderQuickAccessList() {
   assistantListLabel.textContent = "أكثر الأدلة استخدامًا";
   assistantQuickList.innerHTML = "";
+  currentAssistantQuery = "";
+  aiAskBtn.hidden = true;
   QUICK_ACCESS_GUIDES.forEach(item => {
     const found = findGuideByTitle(item.domainId, item.title);
     if (!found) return;
@@ -2517,6 +2519,12 @@ function renderAssistantSearchResults(query) {
   assistantListLabel.textContent = results.length === 0
     ? "نتائج البحث"
     : exact ? `نتائج البحث (${results.length})` : `أقرب النتائج المرتبطة بحثك (${results.length})`;
+
+  currentAssistantQuery = query;
+  aiAskBtn.hidden = false;
+  aiAskBtnLabel.textContent = results.length === 0
+    ? "لم أجد ما أبحث عنه، اسأل الذكاء الاصطناعي"
+    : exact ? "اسأل الذكاء الاصطناعي لمزيد من الشرح" : "لم أجد تطابقًا دقيقًا، اسأل الذكاء الاصطناعي";
 
   assistantQuickList.innerHTML = "";
   if (results.length === 0) {
@@ -2542,6 +2550,7 @@ function openSheet() {
   sheet.setAttribute("aria-hidden", "false");
   assistantSearchInput.value = "";
   renderQuickAccessList();
+  renderExistingAiThread();
 }
 function closeSheet() {
   overlay.classList.remove("open");
@@ -2550,5 +2559,249 @@ function closeSheet() {
 }
 document.getElementById("assistantFab").addEventListener("click", openSheet);
 overlay.addEventListener("click", closeSheet);
+
+/* ============================================================
+   الذكاء الاصطناعي (المرحلة الثانية)
+   ============================================================
+   الترتيب الملتزم به دائمًا: البحث المحلي في الأدلة أولاً (فوري ومجاني
+   ودون إنترنت)، والذكاء الاصطناعي خيار إضافي يختاره المستخدم بنفسه
+   بالضغط على الزر، وليس مصدر الإجابة الأول تلقائيًا.
+
+   الأمان: هذا الملف لا يحتوي على أي مفتاح API إطلاقًا. الاستدعاء
+   الافتراضي يذهب إلى /api/ask (بوابة خادم على Vercel تُخفي المفتاح
+   الحقيقي). خيار "مفتاحك الخاص" يُرسل الطلب مباشرة من متصفح المستخدم
+   لمزوّد الخدمة باستخدام مفتاحه هو فقط، ولا يمر عبر خوادمنا إطلاقًا.
+   ============================================================ */
+
+const AI_ENDPOINT = "/api/ask";
+const AI_OWN_KEY_STORAGE = "dallini_own_api_key";     // localStorage — يبقى بين الزيارات
+const AI_HISTORY_STORAGE = "dallini_ai_history";       // sessionStorage — يُمسح بإغلاق التبويب
+const AI_CACHE_STORAGE = "dallini_ai_cache";           // sessionStorage — لتفادي إرسال نفس السؤال مرتين
+const AI_MAX_HISTORY = 6;
+const AI_DIRECT_MODEL = "claude-haiku-4-5-20251001";
+
+const aiAskBtn = document.getElementById("aiAskBtn");
+const aiAskBtnLabel = document.getElementById("aiAskBtnLabel");
+const aiThread = document.getElementById("aiThread");
+const aiMessages = document.getElementById("aiMessages");
+const aiClearBtn = document.getElementById("aiClearBtn");
+const aiQuotaBadge = document.getElementById("aiQuotaBadge");
+const aiSettingsPanel = document.getElementById("aiSettingsPanel");
+const aiOwnKeyInput = document.getElementById("aiOwnKeyInput");
+const aiOwnKeySave = document.getElementById("aiOwnKeySave");
+const aiOwnKeyClear = document.getElementById("aiOwnKeyClear");
+const aiOwnKeyStatus = document.getElementById("aiOwnKeyStatus");
+
+let currentAssistantQuery = "";
+let aiRequestInFlight = false;
+let lastKnownRemaining = null;
+let lastKnownLimit = null;
+
+function getOwnApiKey() {
+  try { return localStorage.getItem(AI_OWN_KEY_STORAGE) || ""; } catch { return ""; }
+}
+function setOwnApiKey(key) {
+  try {
+    if (key) localStorage.setItem(AI_OWN_KEY_STORAGE, key);
+    else localStorage.removeItem(AI_OWN_KEY_STORAGE);
+  } catch { /* التخزين غير متاح — تجاهل بصمت */ }
+}
+
+function loadAiHistory() {
+  try { return JSON.parse(sessionStorage.getItem(AI_HISTORY_STORAGE) || "[]"); } catch { return []; }
+}
+function saveAiHistory(history) {
+  try { sessionStorage.setItem(AI_HISTORY_STORAGE, JSON.stringify(history.slice(-AI_MAX_HISTORY))); } catch { /* تجاهل */ }
+}
+function loadAiCache() {
+  try { return JSON.parse(sessionStorage.getItem(AI_CACHE_STORAGE) || "{}"); } catch { return {}; }
+}
+function saveAiCache(cache) {
+  try { sessionStorage.setItem(AI_CACHE_STORAGE, JSON.stringify(cache)); } catch { /* تجاهل */ }
+}
+
+function addChatBubble(text, type) {
+  aiThread.hidden = false;
+  const bubble = document.createElement("div");
+  bubble.className = `chat-bubble chat-bubble--${type}`;
+  bubble.textContent = text;
+  aiMessages.appendChild(bubble);
+  aiMessages.scrollTop = aiMessages.scrollHeight;
+  return bubble;
+}
+function addTypingBubble() {
+  aiThread.hidden = false;
+  const bubble = document.createElement("div");
+  bubble.className = "chat-bubble chat-bubble--bot chat-bubble--typing";
+  bubble.innerHTML = "<span></span><span></span><span></span>";
+  aiMessages.appendChild(bubble);
+  aiMessages.scrollTop = aiMessages.scrollHeight;
+  return bubble;
+}
+function renderExistingAiThread() {
+  const history = loadAiHistory();
+  aiMessages.innerHTML = "";
+  if (history.length === 0) { aiThread.hidden = true; return; }
+  aiThread.hidden = false;
+  history.forEach(m => addChatBubble(m.content, m.role === "user" ? "user" : "bot"));
+}
+
+function updateQuotaBadgeUI() {
+  if (getOwnApiKey()) {
+    aiQuotaBadge.textContent = "🔑 مفتاحك الخاص (بلا حد يومي)";
+    aiQuotaBadge.classList.remove("sheet__badge--warn");
+    return;
+  }
+  if (lastKnownRemaining === null) {
+    aiQuotaBadge.textContent = "🤖 اسأل الذكاء الاصطناعي";
+    aiQuotaBadge.classList.remove("sheet__badge--warn");
+    return;
+  }
+  aiQuotaBadge.textContent = `🤖 ${lastKnownRemaining} من ${lastKnownLimit} أسئلة اليوم`;
+  aiQuotaBadge.classList.toggle("sheet__badge--warn", lastKnownRemaining <= 0);
+}
+updateQuotaBadgeUI();
+
+aiQuotaBadge.addEventListener("click", () => {
+  aiSettingsPanel.hidden = !aiSettingsPanel.hidden;
+  if (!aiSettingsPanel.hidden) aiOwnKeyInput.value = getOwnApiKey();
+});
+aiOwnKeySave.addEventListener("click", () => {
+  const key = aiOwnKeyInput.value.trim();
+  if (!key) { aiOwnKeyStatus.textContent = "أدخل مفتاحًا أولاً."; return; }
+  setOwnApiKey(key);
+  aiOwnKeyStatus.textContent = "تم الحفظ. سيُستخدم مفتاحك مباشرة من متصفحك من الآن.";
+  updateQuotaBadgeUI();
+});
+aiOwnKeyClear.addEventListener("click", () => {
+  setOwnApiKey("");
+  aiOwnKeyInput.value = "";
+  aiOwnKeyStatus.textContent = "تمت إزالة المفتاح. سيُستخدم الحد المجاني اليومي المشترك.";
+  updateQuotaBadgeUI();
+});
+aiClearBtn.addEventListener("click", () => {
+  saveAiHistory([]);
+  aiMessages.innerHTML = "";
+  aiThread.hidden = true;
+});
+
+async function callOwnKeyDirect(question, priorHistory, ownKey) {
+  const system = "أنت مساعد دلّني، مساعد داخل تطبيق يقدّم حلولاً عملية لمشاكل الحياة اليومية بالعربية. أجب بالعربية الفصحى المبسّطة، بإيجاز ووضوح، وقدّم خطوات عملية عند الإمكان. لا تقدّم تشخيصًا طبيًا أو استشارة قانونية متخصصة لحالة فردية، ووجّه المستخدم لمختص عند الحاجة الفعلية.";
+  const messages = [...priorHistory, { role: "user", content: question }];
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "x-api-key": ownKey,
+      "anthropic-version": "2023-06-01",
+      "content-type": "application/json",
+      "anthropic-dangerous-direct-browser-access": "true"
+    },
+    body: JSON.stringify({ model: AI_DIRECT_MODEL, max_tokens: 700, system, messages })
+  });
+  if (!res.ok) {
+    const errBody = await res.json().catch(() => null);
+    throw new Error((errBody && errBody.error && errBody.error.message) || ("خطأ " + res.status));
+  }
+  const data = await res.json();
+  const block = (data.content || []).find(b => b.type === "text");
+  return (block && block.text && block.text.trim()) || "لم أستطع إيجاد إجابة واضحة.";
+}
+
+async function askAI(rawQuestion) {
+  const question = String(rawQuestion || "").trim();
+  if (!question || aiRequestInFlight) return;
+
+  const cacheKey = normalizeArabic(question);
+  const cache = loadAiCache();
+
+  addChatBubble(question, "user");
+  const history = loadAiHistory();
+  const priorHistory = history.slice(-AI_MAX_HISTORY);
+  history.push({ role: "user", content: question });
+
+  // تفادي إرسال نفس السؤال مرتين خلال نفس الجلسة (توفير تكلفة)
+  if (cache[cacheKey]) {
+    addChatBubble(cache[cacheKey], "bot");
+    history.push({ role: "assistant", content: cache[cacheKey] });
+    saveAiHistory(history);
+    return;
+  }
+
+  aiRequestInFlight = true;
+  aiAskBtn.disabled = true;
+  const typingBubble = addTypingBubble();
+  const ownKey = getOwnApiKey();
+
+  try {
+    let answer;
+
+    if (ownKey) {
+      answer = await callOwnKeyDirect(question, priorHistory, ownKey);
+      typingBubble.remove();
+      addChatBubble(answer, "bot");
+    } else {
+      // البحث المحلي أولاً لاختيار سياق مختصر وذي صلة نرسله مع السؤال
+      // (يحسّن جودة الإجابة ويقلل حجم الطلب المرسل، وبالتالي التكلفة).
+      const { results } = searchGuides(question, 3);
+      const guides = results.map(r => ({ title: r.guide.title, steps: r.guide.steps }));
+
+      const res = await fetch(AI_ENDPOINT, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ question, history: priorHistory, guides })
+      });
+      typingBubble.remove();
+
+      if (res.status === 429) {
+        const data = await res.json().catch(() => ({}));
+        lastKnownRemaining = 0;
+        lastKnownLimit = data.limit || lastKnownLimit;
+        updateQuotaBadgeUI();
+        const resetMsg = data.resetHint ? (" " + data.resetHint) : "";
+        addChatBubble(`استخدمت كل أسئلتك المجانية لهذا اليوم (${lastKnownLimit}).${resetMsg} يمكنك أيضًا تصفّح الأدلة الجاهزة، أو إضافة مفتاح API خاص بك من الإعدادات (اضغط الشارة أعلى النافذة) لأسئلة غير محدودة.`, "error");
+        history.pop();
+        saveAiHistory(history);
+        aiRequestInFlight = false;
+        aiAskBtn.disabled = false;
+        return;
+      }
+      if (res.status === 413) {
+        addChatBubble("سؤالك أو سجل المحادثة أصبح طويلاً جدًا. اضغط «محادثة جديدة» وحاول مجددًا بسؤال أقصر.", "error");
+        history.pop();
+        saveAiHistory(history);
+        aiRequestInFlight = false;
+        aiAskBtn.disabled = false;
+        return;
+      }
+      if (!res.ok) throw new Error("server_error_" + res.status);
+
+      const data = await res.json();
+      answer = data.answer;
+      lastKnownRemaining = data.remaining;
+      lastKnownLimit = data.limit;
+      updateQuotaBadgeUI();
+      addChatBubble(answer, "bot");
+    }
+
+    cache[cacheKey] = answer;
+    saveAiCache(cache);
+    history.push({ role: "assistant", content: answer });
+    saveAiHistory(history);
+  } catch (err) {
+    typingBubble.remove();
+    addChatBubble("تعذّر الوصول للمساعد الآن. تحقق من اتصالك بالإنترنت (أو من صحة مفتاحك إن كنت تستخدم مفتاحًا خاصًا) وحاول مجددًا.", "error");
+    history.pop();
+    saveAiHistory(history);
+  }
+
+  aiRequestInFlight = false;
+  aiAskBtn.disabled = false;
+}
+
+aiAskBtn.addEventListener("click", () => {
+  const q = currentAssistantQuery || assistantSearchInput.value.trim();
+  if (q) askAI(q);
+});
 
 render();

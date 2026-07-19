@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>دلّني AI — حلول ذكية للحياة اليومية</title>
-<meta name="description" content="دلّني AI: أدلة عملية خطوة بخطوة لحل أكثر مشاكل الحياة اليومية شيوعًا، بالعربية." />
+<meta name="description" content="دلّني AI: أدلة عملية خطوة بخطوة لحل أكثر مشاكل الحياة اليومية شيوعًا، بالعربية، مع مساعد ذكاء اصطناعي يجيب عند الحاجة." />
 <meta name="theme-color" content="#0F5257" />
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" href="icon.svg" type="image/svg+xml" />
@@ -34,7 +34,7 @@
 
 <main id="app"></main>
 
-<footer class="app-footer">دلّني AI • الإصدار v1.2.0</footer>
+<footer class="app-footer">دلّني AI • الإصدار v2.0.0</footer>
 
 <button class="fab" id="assistantFab">
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 2C6.48 2 2 5.94 2 10.8c0 2.77 1.47 5.23 3.78 6.85-.12.9-.5 2.5-1.53 3.9 0 0 2.55-.28 4.6-1.87 1 .27 2.06.42 3.15.42 5.52 0 10-3.94 10-8.8S17.52 2 12 2Z" fill="currentColor"/></svg>
@@ -46,12 +46,24 @@
   <div class="sheet__handle"></div>
   <div class="sheet__header">
     <h2 class="sheet__title">مساعد دلّني</h2>
-    <span class="sheet__badge">🤖 الذكاء الاصطناعي قريبًا</span>
+    <button class="sheet__badge sheet__badge--btn" id="aiQuotaBadge" type="button" title="إعدادات الذكاء الاصطناعي">🤖 …</button>
   </div>
+
+  <div class="ai-settings" id="aiSettingsPanel" hidden>
+    <p class="ai-settings__desc">
+      التطبيق يوفر عددًا محدودًا من الأسئلة المجانية يوميًا لكل جهاز. يمكنك بدل ذلك استخدام مفتاح Anthropic API الخاص بك لأسئلة غير محدودة — يُحفظ المفتاح في متصفحك فقط ولا يصل أبدًا لخوادمنا، والاتصال يتم مباشرة من جهازك لمزوّد الخدمة.
+    </p>
+    <input type="password" id="aiOwnKeyInput" placeholder="sk-ant-... (اختياري)" autocomplete="off" />
+    <div class="ai-settings__actions">
+      <button class="btn btn--outline" id="aiOwnKeySave">حفظ المفتاح</button>
+      <button class="btn btn--ghost" id="aiOwnKeyClear">إزالة المفتاح</button>
+    </div>
+    <p class="ai-settings__note" id="aiOwnKeyStatus"></p>
+  </div>
+
   <div class="assistant-body">
     <p class="assistant-welcome">
-      أهلًا 👋 أنا مساعد دلّني. في هذه النسخة أساعدك على الوصول السريع لأكثر المشاكل شيوعًا.
-      في المرحلة القادمة سأصبح مساعدًا ذكيًا يجيب مباشرة عن أي سؤال تكتبه.
+      أهلًا 👋 أنا مساعد دلّني. اكتب مشكلتك بالأسفل — أبحث أولاً في أدلة التطبيق فورًا ومجانًا، وإن احتجت شرحًا أكثر يمكنك سؤال الذكاء الاصطناعي مباشرة.
     </p>
     <div class="assistant-search-box">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M21 21L16.65 16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
@@ -59,6 +71,19 @@
     </div>
     <div class="section-title section-title--sheet" id="assistantListLabel">أكثر الأدلة استخدامًا</div>
     <div class="guide-list" id="assistantQuickList"></div>
+
+    <button class="ai-ask-cta" id="aiAskBtn" type="button" hidden>
+      <span>🤖</span>
+      <span id="aiAskBtnLabel">لم أجد ما أبحث عنه، اسأل الذكاء الاصطناعي</span>
+    </button>
+
+    <div class="ai-thread" id="aiThread" hidden>
+      <div class="ai-thread__header">
+        <span class="section-title section-title--sheet" style="margin:0">محادثة الذكاء الاصطناعي</span>
+        <button class="ai-thread__clear" id="aiClearBtn" type="button">محادثة جديدة</button>
+      </div>
+      <div class="ai-thread__messages" id="aiMessages"></div>
+    </div>
   </div>
 </section>
 

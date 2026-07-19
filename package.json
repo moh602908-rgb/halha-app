@@ -1,0 +1,9 @@
+{
+  "name": "dallini-ai",
+  "private": true,
+  "type": "module",
+  "description": "دلّني AI — تطبيق ويب PWA بدون أدوات بناء، بالإضافة إلى بوابة خلفية آمنة واحدة (api/ask.js) لحماية مفتاح الذكاء الاصطناعي.",
+  "engines": {
+    "node": ">=18"
+  }
+}

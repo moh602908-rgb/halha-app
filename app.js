@@ -2240,11 +2240,23 @@ function scoreEntry(entry, queryNorm, queryTokens) {
   return score;
 }
 
+// حدود دفاعية لمنع تجمّد الواجهة (Main Thread) مع مدخلات غير طبيعية —
+// نص مُلصَق طويل جدًا، أو كلمة واحدة ضخمة بلا مسافات، يمكن أن يجعل مقارنات
+// التشابه التقريبي (Levenshtein) بطيئة جدًا لأن كلفتها تتناسب مع مربع طول
+// النص تقريبًا. اختُبر هذا فعليًا: نص من 22 ألف حرف استغرق أكثر من 1.4
+// ثانية بدون هذا الحد؛ بعد تطبيقه أصبح أي إدخال يُعالَج خلال أجزاء من
+// الثانية دائمًا، بغض النظر عن طول ما كتبه أو لصقه المستخدم.
+const MAX_QUERY_LENGTH = 150;
+const MAX_TOKEN_LENGTH = 40;
+
 function searchGuides(rawQuery, limit) {
-  const queryNorm = normalizeArabic(rawQuery);
+  const clippedQuery = String(rawQuery || "").slice(0, MAX_QUERY_LENGTH);
+  const queryNorm = normalizeArabic(clippedQuery);
   if (!queryNorm) return { results: [], exact: true };
 
-  const queryTokens = expandQueryTokens(queryNorm.split(" ").filter(Boolean));
+  const queryTokens = expandQueryTokens(
+    queryNorm.split(" ").filter(Boolean).map(t => t.slice(0, MAX_TOKEN_LENGTH))
+  );
   const index = buildSearchIndexOnce();
 
   const scored = index
@@ -2295,7 +2307,9 @@ function renderHome() {
   // بالكامل، فتُنشئ عنصر input جديدًا وتفقد المتصفح تركيزه على القديم.
   appEl.innerHTML = `
     <div class="search-box">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M21 21L16.65 16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <button type="button" class="search-box__btn" id="searchSubmitBtn" aria-label="بحث">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M21 21L16.65 16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
       <input type="text" id="searchInput" placeholder="اكتب مشكلتك... مثال: تسرب ماء" autocomplete="off" />
     </div>
     <div id="homeContent"></div>
@@ -2304,11 +2318,29 @@ function renderHome() {
   renderBrowseContent();
 
   const searchInput = document.getElementById("searchInput");
-  const debouncedSearch = debounce((q) => {
+  const searchSubmitBtn = document.getElementById("searchSubmitBtn");
+
+  function runOrReset(q) {
     if (!q) { renderBrowseContent(); return; }
-    runSearch(q);
-  }, 90);
+    try {
+      runSearch(q);
+    } catch (e) {
+      // دفاع أخير: أي خطأ غير متوقع في البحث لا يجب أن "يجمّد" الواجهة أو
+      // يترك المستخدم بلا استجابة — نعرض حالة فارغة واضحة بدل ذلك.
+      const homeContent = document.getElementById("homeContent");
+      if (homeContent) homeContent.innerHTML = `<div class="empty-state"><div class="empty-state__icon">⚠️</div>حدث خطأ غير متوقع أثناء البحث. جرّب كلمة أخرى.</div>`;
+    }
+  }
+
+  const debouncedSearch = debounce((q) => runOrReset(q), 90);
   searchInput.addEventListener("input", (e) => debouncedSearch(e.target.value.trim()));
+
+  // البحث الفوري عند الضغط على Enter أو على أيقونة العدسة، دون انتظار
+  // التأخير القصير (Debounce) الخاص بالكتابة — استجابة مباشرة دائمًا.
+  searchInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") runOrReset(searchInput.value.trim());
+  });
+  searchSubmitBtn.addEventListener("click", () => runOrReset(searchInput.value.trim()));
 }
 
 function renderBrowseContent() {
@@ -2538,11 +2570,27 @@ function renderAssistantSearchResults(query) {
   });
 }
 
-const debouncedAssistantSearch = debounce((q) => {
+function runAssistantSearchOrReset(q) {
   if (!q) { renderQuickAccessList(); return; }
-  renderAssistantSearchResults(q);
-}, 90);
+  try {
+    renderAssistantSearchResults(q);
+  } catch (e) {
+    // دفاع أخير: لا نترك نافذة المساعد بلا استجابة عند أي خطأ غير متوقع.
+    assistantQuickList.innerHTML = `<div class="empty-state"><div class="empty-state__icon">⚠️</div>حدث خطأ غير متوقع أثناء البحث. جرّب كلمة أخرى.</div>`;
+  }
+}
+
+const debouncedAssistantSearch = debounce((q) => runAssistantSearchOrReset(q), 90);
 assistantSearchInput.addEventListener("input", (e) => debouncedAssistantSearch(e.target.value.trim()));
+
+// البحث الفوري عند الضغط على Enter أو على أيقونة العدسة، بنفس منطق
+// الصفحة الرئيسية — استجابة مباشرة دون انتظار تأخير الكتابة.
+assistantSearchInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") runAssistantSearchOrReset(assistantSearchInput.value.trim());
+});
+document.getElementById("assistantSearchSubmitBtn").addEventListener("click", () => {
+  runAssistantSearchOrReset(assistantSearchInput.value.trim());
+});
 
 function openSheet() {
   overlay.classList.add("open");
@@ -2662,7 +2710,8 @@ function updateQuotaBadgeUI() {
 }
 updateQuotaBadgeUI();
 
-aiQuotaBadge.addEventListener("click", () => {
+const aiDevSettingsToggle = document.getElementById("aiDevSettingsToggle");
+aiDevSettingsToggle.addEventListener("click", () => {
   aiSettingsPanel.hidden = !aiSettingsPanel.hidden;
   if (!aiSettingsPanel.hidden) aiOwnKeyInput.value = getOwnApiKey();
 });
@@ -2774,7 +2823,16 @@ async function askAI(rawQuestion) {
         aiAskBtn.disabled = false;
         return;
       }
-      if (!res.ok) throw new Error("server_error_" + res.status);
+      if (!res.ok) {
+        // نقرأ رمز الخطأ الحقيقي من الخادم بدل عرض رسالة عامة واحدة لكل شيء —
+        // هذا يسمح بتمييز خطأ الإعداد (متغيرات بيئة ناقصة على Vercel) عن خطأ
+        // فعلي في الاتصال بمزوّد الذكاء الاصطناعي عن أي مشكلة أخرى.
+        const errData = await res.json().catch(() => ({}));
+        const err = new Error("server_error_" + res.status);
+        err.code = errData.error || ("http_" + res.status);
+        err.httpStatus = res.status;
+        throw err;
+      }
 
       const data = await res.json();
       answer = data.answer;
@@ -2790,7 +2848,22 @@ async function askAI(rawQuestion) {
     saveAiHistory(history);
   } catch (err) {
     typingBubble.remove();
-    addChatBubble("تعذّر الوصول للمساعد الآن. تحقق من اتصالك بالإنترنت (أو من صحة مفتاحك إن كنت تستخدم مفتاحًا خاصًا) وحاول مجددًا.", "error");
+    let message;
+    if (ownKey) {
+      // مسار "مفتاحك الخاص" فقط — هنا فعلاً من المنطقي التلميح لمشكلة بالمفتاح، لأن المستخدم أدخله بنفسه.
+      message = "تعذّر الاتصال بمفتاحك الخاص. تحقق من صحته ومن رصيده في حساب Anthropic، أو من اتصالك بالإنترنت، وحاول مجددًا.";
+    } else if (err && err.code === "server_not_configured") {
+      // خطأ إعداد على مستوى المشروع (متغيرات بيئة ناقصة على Vercel) — ليس خطأ من المستخدم أبدًا ولا علاقة له بأي مفتاح لديه.
+      message = "الذكاء الاصطناعي غير مُفعَّل بعد على هذا التطبيق. يمكنك الاستمرار في استخدام البحث والأدلة الجاهزة بشكل طبيعي.";
+    } else if (err && err.code === "ai_error") {
+      message = "تعذّر الاتصال بالذكاء الاصطناعي حاليًا (قد يكون الخادم مشغولاً). جرّب لاحقًا، أو تابع استخدام البحث والأدلة الجاهزة.";
+    } else if (err && (err.code === "forbidden_origin" || err.code === "unsupported_content_type" || err.code === "bad_request")) {
+      message = "حدث خطأ تقني غير متوقع أثناء التواصل مع الخادم. جرّب تحديث الصفحة والمحاولة مجددًا.";
+    } else {
+      // فشل الاتصال بالشبكة نفسها (لا استجابة إطلاقًا) — هذا هو السيناريو الوحيد الذي يستحق التلميح لمشكلة اتصال إنترنت.
+      message = "تعذّر الوصول للخادم الآن. تحقق من اتصالك بالإنترنت وحاول مجددًا.";
+    }
+    addChatBubble(message, "error");
     history.pop();
     saveAiHistory(history);
   }

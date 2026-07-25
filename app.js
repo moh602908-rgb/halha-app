@@ -2514,9 +2514,9 @@ const QUICK_ACCESS_GUIDES = [
 
 const overlay = document.getElementById("sheetOverlay");
 const sheet = document.getElementById("assistantSheet");
-const assistantQuickList = document.getElementById("assistantQuickList");
-const assistantListLabel = document.getElementById("assistantListLabel");
-const assistantSearchInput = document.getElementById("assistantSearchInput");
+const assistantFeed = document.getElementById("assistantFeed");
+const assistantInput = document.getElementById("assistantInput");
+const assistantSendBtn = document.getElementById("assistantSendBtn");
 
 function findGuideByTitle(domainId, title) {
   const domain = DOMAINS.find(d => d.id === domainId);
@@ -2531,74 +2531,126 @@ function goToGuideAndCloseSheet(domainId, guideIndex) {
   goTo({ name: "guide", domainId, guideIndex });
 }
 
-function renderQuickAccessList() {
-  assistantListLabel.textContent = "أكثر الأدلة استخدامًا";
-  assistantQuickList.innerHTML = "";
-  currentAssistantQuery = "";
-  aiAskBtn.hidden = true;
+function scrollFeedToBottom() {
+  assistantFeed.scrollTop = assistantFeed.scrollHeight;
+}
+
+/* رسالة الترحيب + مختارات سريعة، تُعرَض داخل منطقة المحادثة نفسها كأول
+   محتوى يراه المستخدم — لا حاجة لأي تمرير لاكتشاف مكان الكتابة، لأن
+   مربع الكتابة ثابت أسفل النافذة دائمًا بصرف النظر عن محتوى المحادثة. */
+function renderWelcomeAndSuggestions() {
+  assistantFeed.innerHTML = "";
+
+  const welcome = document.createElement("p");
+  welcome.className = "feed-welcome";
+  welcome.textContent = "أهلًا 👋 أنا مساعد دلّني. اكتب مشكلتك وسأبحث لك فورًا في أدلة التطبيق، وإن احتجت شرحًا أكثر يمكنك سؤال الذكاء الاصطناعي مباشرة.";
+  assistantFeed.appendChild(welcome);
+
+  const block = document.createElement("div");
+  block.className = "feed-suggestions";
+  const label = document.createElement("div");
+  label.className = "feed-suggestions__label";
+  label.textContent = "أكثر الأدلة استخدامًا";
+  block.appendChild(label);
+
+  const list = document.createElement("div");
+  list.className = "guide-list";
   QUICK_ACCESS_GUIDES.forEach(item => {
     const found = findGuideByTitle(item.domainId, item.title);
     if (!found) return;
     const row = buildGuideRow(found.domain, found.guide, found.index);
     row.onclick = () => goToGuideAndCloseSheet(found.domain.id, found.index);
-    assistantQuickList.appendChild(row);
+    list.appendChild(row);
   });
+  block.appendChild(list);
+  assistantFeed.appendChild(block);
 }
 
-function renderAssistantSearchResults(query) {
-  const { results, exact } = searchGuides(query, 20);
+function addChatBubble(text, type) {
+  const bubble = document.createElement("div");
+  bubble.className = `chat-bubble chat-bubble--${type}`;
+  bubble.textContent = text;
+  assistantFeed.appendChild(bubble);
+  scrollFeedToBottom();
+  return bubble;
+}
+function addTypingBubble() {
+  const bubble = document.createElement("div");
+  bubble.className = "chat-bubble chat-bubble--bot chat-bubble--typing";
+  bubble.innerHTML = "<span></span><span></span><span></span>";
+  assistantFeed.appendChild(bubble);
+  scrollFeedToBottom();
+  return bubble;
+}
 
-  assistantListLabel.textContent = results.length === 0
-    ? "نتائج البحث"
-    : exact ? `نتائج البحث (${results.length})` : `أقرب النتائج المرتبطة بحثك (${results.length})`;
+// نتائج البحث المحلي لسؤال واحد، تُعرَض كبطاقة داخل تدفّق المحادثة، مع
+// خيار متابعة اختياري لسؤال الذكاء الاصطناعي إن احتاج المستخدم شرحًا أكثر.
+function addLocalResultsToFeed(query, results, exact) {
+  const wrap = document.createElement("div");
+  wrap.className = "feed-results";
+  const label = document.createElement("div");
+  label.className = "feed-suggestions__label";
+  label.textContent = results.length === 0
+    ? "لم أجد نتيجة مطابقة تمامًا"
+    : exact ? "أفضل النتائج من الأدلة:" : "أقرب النتائج المرتبطة بسؤالك:";
+  wrap.appendChild(label);
 
-  currentAssistantQuery = query;
-  aiAskBtn.hidden = false;
-  aiAskBtnLabel.textContent = results.length === 0
+  if (results.length > 0) {
+    const list = document.createElement("div");
+    list.className = "guide-list";
+    results.slice(0, 5).forEach(r => {
+      const row = buildGuideRow(r.domain, r.guide, r.index);
+      row.onclick = () => goToGuideAndCloseSheet(r.domain.id, r.index);
+      list.appendChild(row);
+    });
+    wrap.appendChild(list);
+  }
+  assistantFeed.appendChild(wrap);
+
+  const askBtn = document.createElement("button");
+  askBtn.type = "button";
+  askBtn.className = "feed-ask-ai-btn";
+  const askLabel = results.length === 0
     ? "لم أجد ما أبحث عنه، اسأل الذكاء الاصطناعي"
-    : exact ? "اسأل الذكاء الاصطناعي لمزيد من الشرح" : "لم أجد تطابقًا دقيقًا، اسأل الذكاء الاصطناعي";
+    : exact ? "اسأل الذكاء الاصطناعي لمزيد من الشرح" : "اسأل الذكاء الاصطناعي";
+  askBtn.innerHTML = `<span>🤖</span><span>${askLabel}</span>`;
+  askBtn.addEventListener("click", () => { askBtn.remove(); askAI(query); });
+  assistantFeed.appendChild(askBtn);
 
-  assistantQuickList.innerHTML = "";
-  if (results.length === 0) {
-    assistantQuickList.innerHTML = `<div class="empty-state"><div class="empty-state__icon">🔎</div>لم نجد ما يطابق بحثك تمامًا. جرّب كلمة أخرى.</div>`;
-    return;
-  }
-  results.forEach(r => {
-    const row = buildGuideRow(r.domain, r.guide, r.index);
-    row.onclick = () => goToGuideAndCloseSheet(r.domain.id, r.index);
-    assistantQuickList.appendChild(row);
-  });
+  scrollFeedToBottom();
 }
 
-function runAssistantSearchOrReset(q) {
-  if (!q) { renderQuickAccessList(); return; }
+function handleAssistantSend() {
+  const text = assistantInput.value.trim();
+  if (!text) return;
+  assistantInput.value = "";
+  addChatBubble(text, "user");
   try {
-    renderAssistantSearchResults(q);
+    const { results, exact } = searchGuides(text, 5);
+    addLocalResultsToFeed(text, results, exact);
   } catch (e) {
-    // دفاع أخير: لا نترك نافذة المساعد بلا استجابة عند أي خطأ غير متوقع.
-    assistantQuickList.innerHTML = `<div class="empty-state"><div class="empty-state__icon">⚠️</div>حدث خطأ غير متوقع أثناء البحث. جرّب كلمة أخرى.</div>`;
+    // دفاع أخير: لا نترك المحادثة بلا استجابة عند أي خطأ غير متوقع.
+    addChatBubble("حدث خطأ غير متوقع أثناء البحث. جرّب صياغة أخرى لسؤالك.", "error");
   }
+  // الحفاظ على التركيز في مربع الكتابة بعد الإرسال، كما تفعل تطبيقات
+  // المحادثة المعتادة، حتى يستطيع المستخدم متابعة الكتابة فورًا دون نقرة إضافية.
+  assistantInput.focus();
 }
-
-const debouncedAssistantSearch = debounce((q) => runAssistantSearchOrReset(q), 90);
-assistantSearchInput.addEventListener("input", (e) => debouncedAssistantSearch(e.target.value.trim()));
-
-// البحث الفوري عند الضغط على Enter أو على أيقونة العدسة، بنفس منطق
-// الصفحة الرئيسية — استجابة مباشرة دون انتظار تأخير الكتابة.
-assistantSearchInput.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") runAssistantSearchOrReset(assistantSearchInput.value.trim());
-});
-document.getElementById("assistantSearchSubmitBtn").addEventListener("click", () => {
-  runAssistantSearchOrReset(assistantSearchInput.value.trim());
+assistantSendBtn.addEventListener("click", handleAssistantSend);
+assistantInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") handleAssistantSend();
 });
 
 function openSheet() {
   overlay.classList.add("open");
   sheet.classList.add("open");
   sheet.setAttribute("aria-hidden", "false");
-  assistantSearchInput.value = "";
-  renderQuickAccessList();
-  renderExistingAiThread();
+  assistantInput.value = "";
+  renderFeedFromHistoryOrWelcome();
+  // تركيز تلقائي على مربع الكتابة عند الفتح — بعد مهلة قصيرة تطابق مدة
+  // حركة انزلاق النافذة (CSS transition)، لسلوك أكثر ثباتًا عبر المتصفحات
+  // خصوصًا على الجوال.
+  setTimeout(() => assistantInput.focus(), 120);
 }
 function closeSheet() {
   overlay.classList.remove("open");
@@ -2613,7 +2665,8 @@ overlay.addEventListener("click", closeSheet);
    ============================================================
    الترتيب الملتزم به دائمًا: البحث المحلي في الأدلة أولاً (فوري ومجاني
    ودون إنترنت)، والذكاء الاصطناعي خيار إضافي يختاره المستخدم بنفسه
-   بالضغط على الزر، وليس مصدر الإجابة الأول تلقائيًا.
+   بالضغط على زر المتابعة داخل تدفّق المحادثة، وليس مصدر الإجابة الأول
+   تلقائيًا.
 
    الأمان: هذا الملف لا يحتوي على أي مفتاح API إطلاقًا. الاستدعاء
    الافتراضي يذهب إلى /api/ask (بوابة خادم على Vercel تُخفي المفتاح
@@ -2628,10 +2681,6 @@ const AI_CACHE_STORAGE = "dallini_ai_cache";           // sessionStorage — ل�
 const AI_MAX_HISTORY = 6;
 const AI_DIRECT_MODEL = "claude-haiku-4-5-20251001";
 
-const aiAskBtn = document.getElementById("aiAskBtn");
-const aiAskBtnLabel = document.getElementById("aiAskBtnLabel");
-const aiThread = document.getElementById("aiThread");
-const aiMessages = document.getElementById("aiMessages");
 const aiClearBtn = document.getElementById("aiClearBtn");
 const aiQuotaBadge = document.getElementById("aiQuotaBadge");
 const aiSettingsPanel = document.getElementById("aiSettingsPanel");
@@ -2640,7 +2689,6 @@ const aiOwnKeySave = document.getElementById("aiOwnKeySave");
 const aiOwnKeyClear = document.getElementById("aiOwnKeyClear");
 const aiOwnKeyStatus = document.getElementById("aiOwnKeyStatus");
 
-let currentAssistantQuery = "";
 let aiRequestInFlight = false;
 let lastKnownRemaining = null;
 let lastKnownLimit = null;
@@ -2668,29 +2716,12 @@ function saveAiCache(cache) {
   try { sessionStorage.setItem(AI_CACHE_STORAGE, JSON.stringify(cache)); } catch { /* تجاهل */ }
 }
 
-function addChatBubble(text, type) {
-  aiThread.hidden = false;
-  const bubble = document.createElement("div");
-  bubble.className = `chat-bubble chat-bubble--${type}`;
-  bubble.textContent = text;
-  aiMessages.appendChild(bubble);
-  aiMessages.scrollTop = aiMessages.scrollHeight;
-  return bubble;
-}
-function addTypingBubble() {
-  aiThread.hidden = false;
-  const bubble = document.createElement("div");
-  bubble.className = "chat-bubble chat-bubble--bot chat-bubble--typing";
-  bubble.innerHTML = "<span></span><span></span><span></span>";
-  aiMessages.appendChild(bubble);
-  aiMessages.scrollTop = aiMessages.scrollHeight;
-  return bubble;
-}
-function renderExistingAiThread() {
+// عند فتح النافذة: إن كانت هناك محادثة ذكاء اصطناعي سابقة ضمن هذه الجلسة
+// نعرضها كما هي (متابعة طبيعية)، وإلا نعرض الترحيب والمختارات السريعة.
+function renderFeedFromHistoryOrWelcome() {
   const history = loadAiHistory();
-  aiMessages.innerHTML = "";
-  if (history.length === 0) { aiThread.hidden = true; return; }
-  aiThread.hidden = false;
+  if (history.length === 0) { renderWelcomeAndSuggestions(); return; }
+  assistantFeed.innerHTML = "";
   history.forEach(m => addChatBubble(m.content, m.role === "user" ? "user" : "bot"));
 }
 
@@ -2728,10 +2759,12 @@ aiOwnKeyClear.addEventListener("click", () => {
   aiOwnKeyStatus.textContent = "تمت إزالة المفتاح. سيُستخدم الحد المجاني اليومي المشترك.";
   updateQuotaBadgeUI();
 });
+// زر "محادثة جديدة" في رأس النافذة: يمسح محادثة الذكاء الاصطناعي المحفوظة
+// ويعيد عرض الترحيب والمختارات السريعة من جديد.
 aiClearBtn.addEventListener("click", () => {
   saveAiHistory([]);
-  aiMessages.innerHTML = "";
-  aiThread.hidden = true;
+  renderWelcomeAndSuggestions();
+  assistantInput.focus();
 });
 
 async function callOwnKeyDirect(question, priorHistory, ownKey) {
@@ -2763,7 +2796,6 @@ async function askAI(rawQuestion) {
   const cacheKey = normalizeArabic(question);
   const cache = loadAiCache();
 
-  addChatBubble(question, "user");
   const history = loadAiHistory();
   const priorHistory = history.slice(-AI_MAX_HISTORY);
   history.push({ role: "user", content: question });
@@ -2777,7 +2809,8 @@ async function askAI(rawQuestion) {
   }
 
   aiRequestInFlight = true;
-  aiAskBtn.disabled = true;
+  assistantSendBtn.disabled = true;
+  assistantInput.disabled = true;
   const typingBubble = addTypingBubble();
   const ownKey = getOwnApiKey();
 
@@ -2808,19 +2841,21 @@ async function askAI(rawQuestion) {
         lastKnownLimit = data.limit || lastKnownLimit;
         updateQuotaBadgeUI();
         const resetMsg = data.resetHint ? (" " + data.resetHint) : "";
-        addChatBubble(`استخدمت كل أسئلتك المجانية لهذا اليوم (${lastKnownLimit}).${resetMsg} يمكنك أيضًا تصفّح الأدلة الجاهزة، أو إضافة مفتاح API خاص بك من الإعدادات (اضغط الشارة أعلى النافذة) لأسئلة غير محدودة.`, "error");
+        addChatBubble(`استخدمت كل أسئلتك المجانية لهذا اليوم (${lastKnownLimit}).${resetMsg} يمكنك أيضًا تصفّح الأدلة الجاهزة، أو إضافة مفتاح API خاص بك من "خيارات متقدمة للمطوّرين" لأسئلة غير محدودة.`, "error");
         history.pop();
         saveAiHistory(history);
         aiRequestInFlight = false;
-        aiAskBtn.disabled = false;
+        assistantSendBtn.disabled = false;
+        assistantInput.disabled = false;
         return;
       }
       if (res.status === 413) {
-        addChatBubble("سؤالك أو سجل المحادثة أصبح طويلاً جدًا. اضغط «محادثة جديدة» وحاول مجددًا بسؤال أقصر.", "error");
+        addChatBubble("سؤالك أو سجل المحادثة أصبح طويلاً جدًا. اضغط زر «محادثة جديدة» أعلى النافذة وحاول مجددًا بسؤال أقصر.", "error");
         history.pop();
         saveAiHistory(history);
         aiRequestInFlight = false;
-        aiAskBtn.disabled = false;
+        assistantSendBtn.disabled = false;
+        assistantInput.disabled = false;
         return;
       }
       if (!res.ok) {
@@ -2859,8 +2894,15 @@ async function askAI(rawQuestion) {
       message = "تعذّر الاتصال بالذكاء الاصطناعي حاليًا (قد يكون الخادم مشغولاً). جرّب لاحقًا، أو تابع استخدام البحث والأدلة الجاهزة.";
     } else if (err && (err.code === "forbidden_origin" || err.code === "unsupported_content_type" || err.code === "bad_request")) {
       message = "حدث خطأ تقني غير متوقع أثناء التواصل مع الخادم. جرّب تحديث الصفحة والمحاولة مجددًا.";
+    } else if (err && err.httpStatus === 404) {
+      // وصل الطلب فعليًا وحصل على رد من الخادم (وليس فشل شبكة)، لكن المسار /api/ask نفسه غير موجود —
+      // هذا يشير بوضوح لمشكلة نشر/إعداد على Vercel (الدالة غير منشورة بشكل صحيح)، وليس مشكلة اتصال إنترنت للمستخدم.
+      message = "تعذّر الوصول لخدمة الذكاء الاصطناعي (الرابط غير موجود على الخادم — رمز 404). هذه على الأرجح مشكلة إعداد لدى مالك التطبيق وليست من طرفك. يمكنك متابعة استخدام البحث والأدلة الجاهزة.";
+    } else if (err && err.httpStatus) {
+      // وصلت استجابة فعلية من الخادم برمز غير متوقع — نعرضه صراحة بدل تخمين "مشكلة إنترنت".
+      message = `حدث خطأ غير متوقع من الخادم (رمز ${err.httpStatus}). جرّب لاحقًا، أو تابع استخدام البحث والأدلة الجاهزة.`;
     } else {
-      // فشل الاتصال بالشبكة نفسها (لا استجابة إطلاقًا) — هذا هو السيناريو الوحيد الذي يستحق التلميح لمشكلة اتصال إنترنت.
+      // لا استجابة من الخادم إطلاقًا (فشل fetch نفسه) — هذا هو السيناريو الوحيد الذي يستحق التلميح الفعلي لمشكلة اتصال إنترنت.
       message = "تعذّر الوصول للخادم الآن. تحقق من اتصالك بالإنترنت وحاول مجددًا.";
     }
     addChatBubble(message, "error");
@@ -2869,12 +2911,9 @@ async function askAI(rawQuestion) {
   }
 
   aiRequestInFlight = false;
-  aiAskBtn.disabled = false;
+  assistantSendBtn.disabled = false;
+  assistantInput.disabled = false;
+  assistantInput.focus();
 }
-
-aiAskBtn.addEventListener("click", () => {
-  const q = currentAssistantQuery || assistantSearchInput.value.trim();
-  if (q) askAI(q);
-});
 
 render();

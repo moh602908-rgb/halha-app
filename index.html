@@ -34,7 +34,7 @@
 
 <main id="app"></main>
 
-<footer class="app-footer">دلّني AI • الإصدار v2.0.1</footer>
+<footer class="app-footer">دلّني AI • الإصدار v2.0.2</footer>
 
 <button class="fab" id="assistantFab">
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 2C6.48 2 2 5.94 2 10.8c0 2.77 1.47 5.23 3.78 6.85-.12.9-.5 2.5-1.53 3.9 0 0 2.55-.28 4.6-1.87 1 .27 2.06.42 3.15.42 5.52 0 10-3.94 10-8.8S17.52 2 12 2Z" fill="currentColor"/></svg>
@@ -46,7 +46,12 @@
   <div class="sheet__handle"></div>
   <div class="sheet__header">
     <h2 class="sheet__title">مساعد دلّني</h2>
-    <span class="sheet__badge" id="aiQuotaBadge">🤖 …</span>
+    <div class="sheet__header-actions">
+      <span class="sheet__badge" id="aiQuotaBadge">🤖 …</span>
+      <button class="sheet__reset" id="aiClearBtn" type="button" title="محادثة جديدة" aria-label="محادثة جديدة">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 4V9H9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.5 15A8 8 0 1 0 6 7L4 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
   </div>
 
   <div class="ai-settings" id="aiSettingsPanel" hidden>
@@ -61,34 +66,16 @@
     <p class="ai-settings__note" id="aiOwnKeyStatus"></p>
   </div>
 
-  <div class="assistant-body">
-    <p class="assistant-welcome">
-      أهلًا 👋 أنا مساعد دلّني. اكتب مشكلتك بالأسفل — أبحث أولاً في أدلة التطبيق فورًا ومجانًا، وإن احتجت شرحًا أكثر يمكنك سؤال الذكاء الاصطناعي مباشرة.
-    </p>
-    <div class="assistant-search-box">
-      <button type="button" class="search-box__btn" id="assistantSearchSubmitBtn" aria-label="بحث">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M21 21L16.65 16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      </button>
-      <input type="text" id="assistantSearchInput" placeholder="ابحث في كل الأدلة..." autocomplete="off" />
-    </div>
-    <div class="section-title section-title--sheet" id="assistantListLabel">أكثر الأدلة استخدامًا</div>
-    <div class="guide-list" id="assistantQuickList"></div>
+  <div class="assistant-feed" id="assistantFeed"></div>
 
-    <button class="ai-ask-cta" id="aiAskBtn" type="button" hidden>
-      <span>🤖</span>
-      <span id="aiAskBtnLabel">لم أجد ما أبحث عنه، اسأل الذكاء الاصطناعي</span>
+  <div class="assistant-inputbar">
+    <input type="text" id="assistantInput" placeholder="اكتب مشكلتك... مثال: تسرب ماء" autocomplete="off" />
+    <button type="button" class="assistant-inputbar__send" id="assistantSendBtn" aria-label="إرسال">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none"><path d="M4 12H20M20 12L14 6M20 12L14 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
-
-    <div class="ai-thread" id="aiThread" hidden>
-      <div class="ai-thread__header">
-        <span class="section-title section-title--sheet" style="margin:0">محادثة الذكاء الاصطناعي</span>
-        <button class="ai-thread__clear" id="aiClearBtn" type="button">محادثة جديدة</button>
-      </div>
-      <div class="ai-thread__messages" id="aiMessages"></div>
-    </div>
-
-    <button class="ai-dev-link" id="aiDevSettingsToggle" type="button">خيارات متقدمة للمطوّرين</button>
   </div>
+
+  <button class="ai-dev-link" id="aiDevSettingsToggle" type="button">خيارات متقدمة للمطوّرين</button>
 </section>
 
 <script src="app.js"></script>

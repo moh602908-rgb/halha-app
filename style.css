@@ -432,29 +432,6 @@ main#app {
 .btn--ghost { background: transparent; color: var(--ink-soft); border: 1.5px solid var(--border); margin-top: 10px; }
 .ai-settings .btn { width: auto; flex: 1; margin-top: 0; padding: 9px 14px; font-size: 13px; }
 
-/* ===== زر "اسأل الذكاء الاصطناعي" ===== */
-.ai-ask-cta[hidden], .ai-thread[hidden] { display: none !important; }
-.ai-ask-cta {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  background: var(--primary-tint);
-  color: var(--primary-dark);
-  border: 1.5px dashed var(--primary);
-  border-radius: 14px;
-  padding: 12px 14px;
-  font-weight: 700;
-  font-size: 13.5px;
-  flex-shrink: 0;
-}
-
-/* ===== محادثة الذكاء الاصطناعي ===== */
-.ai-thread { flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; }
-.ai-thread__header { display: flex; align-items: center; justify-content: space-between; }
-.ai-thread__clear { font-size: 12px; color: var(--ink-soft); background: none; border: none; text-decoration: underline; }
-.ai-thread__messages { display: flex; flex-direction: column; gap: 10px; }
-
 .chat-bubble {
   max-width: 88%;
   padding: 11px 14px;
@@ -489,15 +466,31 @@ main#app {
   30% { transform: translateY(-4px); opacity: 1; }
 }
 
-.assistant-body {
+/* ===== رأس النافذة: الشارة + زر محادثة جديدة ===== */
+.sheet__header-actions { display: flex; align-items: center; gap: 8px; }
+.sheet__reset {
+  display: flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--ink-soft);
+  flex-shrink: 0;
+}
+.sheet__reset:hover { color: var(--primary); border-color: var(--primary); }
+.sheet__reset:active { transform: scale(0.92); }
+
+/* ===== منطقة المحادثة — المنطقة الوحيدة القابلة للتمرير داخل النافذة ===== */
+.assistant-feed {
   flex: 1;
+  min-height: 0; /* ضروري حتى يعمل overflow-y داخل حاوية flex بدل دفع الأبناء خارج الحدود */
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 12px;
   padding: 2px 2px 10px;
 }
-.assistant-welcome {
+.feed-welcome {
   background: var(--primary-tint);
   color: var(--ink);
   border-radius: 14px;
@@ -506,28 +499,64 @@ main#app {
   line-height: 1.8;
   margin: 0;
   flex-shrink: 0;
+  align-self: flex-start;
+  max-width: 92%;
 }
-.assistant-search-box {
+.feed-suggestions { display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
+.feed-suggestions__label { font-size: 12.5px; font-weight: 700; color: var(--ink-soft); margin: 2px 2px 0; }
+
+/* بطاقة نتائج بحث محلي داخل فقاعة رد — تُبنى من guide-row الموجودة أصلاً */
+.feed-results { align-self: flex-start; max-width: 92%; width: 100%; display: flex; flex-direction: column; gap: 6px; }
+.feed-results .guide-list { gap: 6px; }
+
+.feed-ask-ai-btn {
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--paper);
+  color: var(--primary-dark);
+  border: 1.5px dashed var(--primary);
+  border-radius: 12px;
+  padding: 9px 12px;
+  font-weight: 700;
+  font-size: 12.5px;
+}
+
+/* ===== شريط الكتابة — ثابت أسفل النافذة دائمًا، لا يتحرك مع التمرير ===== */
+.assistant-inputbar {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: 8px;
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 24px;
-  padding: 10px 14px;
-  flex-shrink: 0;
-  color: var(--ink-soft);
+  padding: 6px 6px 6px 16px;
+  margin-top: 8px;
 }
-.assistant-search-box input {
+.assistant-inputbar input {
   flex: 1;
   border: none;
   outline: none;
   background: transparent;
   font-family: var(--font-body);
-  font-size: 14px;
+  font-size: 14.5px;
   color: var(--ink);
 }
-.section-title--sheet { margin: 2px 0 2px; flex-shrink: 0; }
+.assistant-inputbar__send {
+  display: flex; align-items: center; justify-content: center;
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  flex-shrink: 0;
+}
+.assistant-inputbar__send:hover { background: var(--primary-dark); }
+.assistant-inputbar__send:active { transform: scale(0.92); }
+.assistant-inputbar__send:disabled { opacity: 0.5; }
+
 .ai-dev-link {
   align-self: center;
   background: none;

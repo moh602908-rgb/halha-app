@@ -34,7 +34,7 @@
 
 <main id="app"></main>
 
-<footer class="app-footer">دلّني AI • الإصدار v2.0.2</footer>
+<footer class="app-footer">دلّني AI • الإصدار v2.2.0</footer>
 
 <button class="fab" id="assistantFab">
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 2C6.48 2 2 5.94 2 10.8c0 2.77 1.47 5.23 3.78 6.85-.12.9-.5 2.5-1.53 3.9 0 0 2.55-.28 4.6-1.87 1 .27 2.06.42 3.15.42 5.52 0 10-3.94 10-8.8S17.52 2 12 2Z" fill="currentColor"/></svg>
@@ -87,9 +87,19 @@
 
    عند اكتشاف نسخة جديدة أصبحت هي المتحكمة (controllerchange)، نعيد تحميل
    الصفحة تلقائيًا مرة واحدة فقط، حتى تظهر أحدث نسخة للمستخدم فورًا دون
-   الحاجة لتحديث يدوي أو مسح بيانات الموقع. */
+   الحاجة لتحديث يدوي أو مسح بيانات الموقع.
+
+   ⚠️ إصلاح مهم: حدث controllerchange يُطلَق أيضًا عند أول زيارة على
+   الإطلاق (انتقال من "لا يوجد Service Worker متحكم" إلى "أصبح هناك")،
+   وليس فقط عند تحديث نسخة قديمة فعليًا. بدون تمييز الحالتين، قد تُعاد
+   تحميل الصفحة تلقائيًا أثناء أول تفاعل حقيقي للمستخدم إن كان سريعًا
+   بما يكفي (مثل فتح نافذة المساعد خلال الثانية الأولى)، مقاطعًا تفاعله
+   دون داعٍ. الحل: نتذكر هل كان هناك متحكم فعلي *قبل* هذه الزيارة، ولا
+   نُعيد التحميل إلا في تلك الحالة تحديدًا (تحديث نسخة سابقة حقيقي). */
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
+    const hadControllerBeforeThisLoad = !!navigator.serviceWorker.controller;
+
     navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((reg) => {
       // اطلب فحص تحديث فوري عند كل تحميل للصفحة، بدل انتظار الفحص الدوري للمتصفح.
       reg.update().catch(() => {});
@@ -97,6 +107,7 @@ if ('serviceWorker' in navigator) {
 
     let hasReloaded = false;
     navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!hadControllerBeforeThisLoad) return; // أول زيارة على الإطلاق — لا داعي لإعادة تحميل
       if (hasReloaded) return; // منع حلقة تحديث متكررة
       hasReloaded = true;
       window.location.reload();

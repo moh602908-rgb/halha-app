@@ -2501,69 +2501,25 @@ backBtn.addEventListener("click", () => {
    يعمل دون إنترنت أو اتصال بخدمة خارجية.
    ============================================================ */
 
-const QUICK_ACCESS_GUIDES = [
-  { domainId: "emergency", title: "الاشتباه بتسرب غاز في المنزل" },
-  { domainId: "home", title: "تسرب ماء بسيط تحت الحوض" },
-  { domainId: "tech", title: "الهاتف بطيء فجأة" },
-  { domainId: "money", title: "راتبي ينتهي قبل نهاية الشهر" },
-  { domainId: "digitalsafety", title: "التعرف على رسائل ومكالمات الاحتيال الإلكتروني" },
-  { domainId: "admin", title: "فقدان بطاقة هوية أو وثيقة مهمة" },
-  { domainId: "family", title: "طفلي يرفض النوم في وقته" },
-  { domainId: "car", title: "السيارة لا تعمل فجأة (بطارية فارغة)" }
-];
-
 const overlay = document.getElementById("sheetOverlay");
 const sheet = document.getElementById("assistantSheet");
 const assistantFeed = document.getElementById("assistantFeed");
 const assistantInput = document.getElementById("assistantInput");
 const assistantSendBtn = document.getElementById("assistantSendBtn");
 
-function findGuideByTitle(domainId, title) {
-  const domain = DOMAINS.find(d => d.id === domainId);
-  if (!domain) return null;
-  const index = domain.guides.findIndex(g => g.title === title);
-  if (index === -1) return null;
-  return { domain, guide: domain.guides[index], index };
-}
-
-function goToGuideAndCloseSheet(domainId, guideIndex) {
-  closeSheet();
-  goTo({ name: "guide", domainId, guideIndex });
-}
-
 function scrollFeedToBottom() {
   assistantFeed.scrollTop = assistantFeed.scrollHeight;
 }
 
-/* رسالة الترحيب + مختارات سريعة، تُعرَض داخل منطقة المحادثة نفسها كأول
-   محتوى يراه المستخدم — لا حاجة لأي تمرير لاكتشاف مكان الكتابة، لأن
-   مربع الكتابة ثابت أسفل النافذة دائمًا بصرف النظر عن محتوى المحادثة. */
-function renderWelcomeAndSuggestions() {
+/* نافذة الذكاء الاصطناعي محادثة خالصة، منفصلة تمامًا عن نظام الأدلة في
+   الواجهة: لا بطاقات أدلة، لا اقتراحات، لا انتقالات — فقط رسالة ترحيب
+   نصية ثم محادثة عادية، تمامًا كتطبيقات المحادثة المعروفة. */
+function renderWelcome() {
   assistantFeed.innerHTML = "";
-
   const welcome = document.createElement("p");
   welcome.className = "feed-welcome";
-  welcome.textContent = "أهلًا 👋 أنا مساعد دلّني. اكتب مشكلتك وسأبحث لك فورًا في أدلة التطبيق، وإن احتجت شرحًا أكثر يمكنك سؤال الذكاء الاصطناعي مباشرة.";
+  welcome.textContent = "أهلًا 👋 أنا مساعد دلّني. اسألني عن أي مشكلة تواجهك في حياتك اليومية.";
   assistantFeed.appendChild(welcome);
-
-  const block = document.createElement("div");
-  block.className = "feed-suggestions";
-  const label = document.createElement("div");
-  label.className = "feed-suggestions__label";
-  label.textContent = "أكثر الأدلة استخدامًا";
-  block.appendChild(label);
-
-  const list = document.createElement("div");
-  list.className = "guide-list";
-  QUICK_ACCESS_GUIDES.forEach(item => {
-    const found = findGuideByTitle(item.domainId, item.title);
-    if (!found) return;
-    const row = buildGuideRow(found.domain, found.guide, found.index);
-    row.onclick = () => goToGuideAndCloseSheet(found.domain.id, found.index);
-    list.appendChild(row);
-  });
-  block.appendChild(list);
-  assistantFeed.appendChild(block);
 }
 
 function addChatBubble(text, type) {
@@ -2577,64 +2533,21 @@ function addChatBubble(text, type) {
 function addTypingBubble() {
   const bubble = document.createElement("div");
   bubble.className = "chat-bubble chat-bubble--bot chat-bubble--typing";
-  bubble.innerHTML = "<span></span><span></span><span></span>";
+  bubble.innerHTML = `<span class="chat-bubble--typing__label">جارٍ التفكير</span><span class="chat-bubble--typing__dots"><span></span><span></span><span></span></span>`;
   assistantFeed.appendChild(bubble);
   scrollFeedToBottom();
   return bubble;
 }
 
-// نتائج البحث المحلي لسؤال واحد، تُعرَض كبطاقة داخل تدفّق المحادثة، مع
-// خيار متابعة اختياري لسؤال الذكاء الاصطناعي إن احتاج المستخدم شرحًا أكثر.
-function addLocalResultsToFeed(query, results, exact) {
-  const wrap = document.createElement("div");
-  wrap.className = "feed-results";
-  const label = document.createElement("div");
-  label.className = "feed-suggestions__label";
-  label.textContent = results.length === 0
-    ? "لم أجد نتيجة مطابقة تمامًا"
-    : exact ? "أفضل النتائج من الأدلة:" : "أقرب النتائج المرتبطة بسؤالك:";
-  wrap.appendChild(label);
-
-  if (results.length > 0) {
-    const list = document.createElement("div");
-    list.className = "guide-list";
-    results.slice(0, 5).forEach(r => {
-      const row = buildGuideRow(r.domain, r.guide, r.index);
-      row.onclick = () => goToGuideAndCloseSheet(r.domain.id, r.index);
-      list.appendChild(row);
-    });
-    wrap.appendChild(list);
-  }
-  assistantFeed.appendChild(wrap);
-
-  const askBtn = document.createElement("button");
-  askBtn.type = "button";
-  askBtn.className = "feed-ask-ai-btn";
-  const askLabel = results.length === 0
-    ? "لم أجد ما أبحث عنه، اسأل الذكاء الاصطناعي"
-    : exact ? "اسأل الذكاء الاصطناعي لمزيد من الشرح" : "اسأل الذكاء الاصطناعي";
-  askBtn.innerHTML = `<span>🤖</span><span>${askLabel}</span>`;
-  askBtn.addEventListener("click", () => { askBtn.remove(); askAI(query); });
-  assistantFeed.appendChild(askBtn);
-
-  scrollFeedToBottom();
-}
-
+// كل رسالة يُرسلها المستخدم تذهب مباشرة للذكاء الاصطناعي — تجربة محادثة
+// واحدة موحّدة. البحث في الأدلة ما زال يعمل داخليًا (راجع askAI أدناه)
+// لتحسين جودة الإجابة فقط، دون أن يرى المستخدم أي أثر له في الواجهة.
 function handleAssistantSend() {
   const text = assistantInput.value.trim();
   if (!text) return;
   assistantInput.value = "";
   addChatBubble(text, "user");
-  try {
-    const { results, exact } = searchGuides(text, 5);
-    addLocalResultsToFeed(text, results, exact);
-  } catch (e) {
-    // دفاع أخير: لا نترك المحادثة بلا استجابة عند أي خطأ غير متوقع.
-    addChatBubble("حدث خطأ غير متوقع أثناء البحث. جرّب صياغة أخرى لسؤالك.", "error");
-  }
-  // الحفاظ على التركيز في مربع الكتابة بعد الإرسال، كما تفعل تطبيقات
-  // المحادثة المعتادة، حتى يستطيع المستخدم متابعة الكتابة فورًا دون نقرة إضافية.
-  assistantInput.focus();
+  askAI(text);
 }
 assistantSendBtn.addEventListener("click", handleAssistantSend);
 assistantInput.addEventListener("keydown", (e) => {
@@ -2720,7 +2633,7 @@ function saveAiCache(cache) {
 // نعرضها كما هي (متابعة طبيعية)، وإلا نعرض الترحيب والمختارات السريعة.
 function renderFeedFromHistoryOrWelcome() {
   const history = loadAiHistory();
-  if (history.length === 0) { renderWelcomeAndSuggestions(); return; }
+  if (history.length === 0) { renderWelcome(); return; }
   assistantFeed.innerHTML = "";
   history.forEach(m => addChatBubble(m.content, m.role === "user" ? "user" : "bot"));
 }
@@ -2763,7 +2676,7 @@ aiOwnKeyClear.addEventListener("click", () => {
 // ويعيد عرض الترحيب والمختارات السريعة من جديد.
 aiClearBtn.addEventListener("click", () => {
   saveAiHistory([]);
-  renderWelcomeAndSuggestions();
+  renderWelcome();
   assistantInput.focus();
 });
 

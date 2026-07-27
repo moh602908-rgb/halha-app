@@ -453,14 +453,16 @@ main#app {
   border-bottom-left-radius: 4px;
 }
 .chat-bubble--error { background: var(--urgent-tint); color: var(--urgent); align-self: flex-start; }
-.chat-bubble--typing { display: flex; gap: 4px; align-items: center; }
-.chat-bubble--typing span {
+.chat-bubble--typing { display: flex; gap: 8px; align-items: center; }
+.chat-bubble--typing__label { font-size: 13px; color: var(--ink-soft); }
+.chat-bubble--typing__dots { display: flex; gap: 4px; align-items: center; }
+.chat-bubble--typing__dots span {
   width: 6px; height: 6px; border-radius: 50%;
   background: var(--ink-soft);
   animation: typing-bounce 1.1s infinite ease-in-out;
 }
-.chat-bubble--typing span:nth-child(2) { animation-delay: .15s; }
-.chat-bubble--typing span:nth-child(3) { animation-delay: .3s; }
+.chat-bubble--typing__dots span:nth-child(2) { animation-delay: .15s; }
+.chat-bubble--typing__dots span:nth-child(3) { animation-delay: .3s; }
 @keyframes typing-bounce {
   0%, 60%, 100% { transform: translateY(0); opacity: .5; }
   30% { transform: translateY(-4px); opacity: 1; }
@@ -501,26 +503,6 @@ main#app {
   flex-shrink: 0;
   align-self: flex-start;
   max-width: 92%;
-}
-.feed-suggestions { display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
-.feed-suggestions__label { font-size: 12.5px; font-weight: 700; color: var(--ink-soft); margin: 2px 2px 0; }
-
-/* بطاقة نتائج بحث محلي داخل فقاعة رد — تُبنى من guide-row الموجودة أصلاً */
-.feed-results { align-self: flex-start; max-width: 92%; width: 100%; display: flex; flex-direction: column; gap: 6px; }
-.feed-results .guide-list { gap: 6px; }
-
-.feed-ask-ai-btn {
-  align-self: flex-start;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: var(--paper);
-  color: var(--primary-dark);
-  border: 1.5px dashed var(--primary);
-  border-radius: 12px;
-  padding: 9px 12px;
-  font-weight: 700;
-  font-size: 12.5px;
 }
 
 /* ===== شريط الكتابة — ثابت أسفل النافذة دائمًا، لا يتحرك مع التمرير ===== */

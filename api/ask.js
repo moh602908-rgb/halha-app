@@ -154,7 +154,12 @@ export default async function handler(req) {
       timeoutMs: CONFIG.PROVIDER_TIMEOUT_MS
     });
   } catch (e) {
-    logSecurityEvent("ai_provider_error", req);
+    // نسجّل نص الخطأ الفعلي (بدون أي مفتاح فيه أبدًا) في سجلات Vercel، حتى
+    // نستطيع تشخيص سبب الفشل الحقيقي بدل تخمينه من رمز 502 وحده.
+    console.warn("[dallini-security] ai_provider_error", {
+      time: new Date().toISOString(),
+      detail: String(e && e.message ? e.message : e).slice(0, 300)
+    });
     return jsonResponse({ error: "ai_error" }, 502);
   }
 

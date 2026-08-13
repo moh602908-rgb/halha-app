@@ -29,7 +29,7 @@
 export const config = { runtime: "edge" };
 
 import { CONFIG, resolvePlan } from "../lib/config.js";
-import { callAIProvider } from "../lib/providers.js";
+import { resolveAndCall } from "../lib/providerManager.js";
 import { checkAndPrepareUsage } from "../lib/ratelimit.js";
 import { buildSystemPrompt, sanitizeHistory, sanitizeGuides } from "../lib/prompt.js";
 
@@ -145,7 +145,7 @@ export default async function handler(req) {
 
   let answer;
   try {
-    answer = await callAIProvider(CONFIG.ACTIVE_PROVIDER, {
+    answer = await resolveAndCall({
       system,
       messages,
       model,

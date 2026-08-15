@@ -30,7 +30,7 @@ export const config = { runtime: "edge" };
 
 import { CONFIG, resolvePlan } from "../lib/config.js";
 import { resolveAndCall } from "../lib/providerManager.js";
-import { checkAndPrepareUsage } from "../lib/ratelimit.js";
+import { checkAndPrepareUsage, checkGlobalDailyCap, incrementGlobalDailyUsage } from "../lib/ratelimit.js";
 import { buildSystemPrompt, sanitizeHistory, sanitizeGuides } from "../lib/prompt.js";
 
 function jsonResponse(obj, status, extraHeaders) {
@@ -42,7 +42,10 @@ function jsonResponse(obj, status, extraHeaders) {
 
 function checkSameOrigin(req) {
   const origin = req.headers.get("origin");
-  if (!origin) return true; // لا رأس Origin (طلب مباشر من الخادم مثلاً) — نسمح به
+  // المرحلة 3: كان يُسمح سابقاً بغياب Origin تماماً (طلبات curl/سكربتات
+  // مباشرة تتجاوز هذا الفحص كلياً). التطبيق الحالي (PWA) يرسل Origin
+  // دائماً في طلبات POST من نفس النطاق، فلا حاجة شرعية للسماح بغيابه.
+  if (!origin) return false;
   const host = req.headers.get("host");
   try {
     return new URL(origin).host === host;
@@ -118,6 +121,14 @@ export default async function handler(req) {
     return jsonResponse({ error: "empty_question" }, 400);
   }
 
+  // المرحلة 3: فحص السقف العام التقديري أولاً (Best-effort، راجع
+  // lib/ratelimit.js) — لا يستهلك شيئاً بحد ذاته، فحص فقط.
+  const globalCheck = checkGlobalDailyCap(CONFIG.GLOBAL_DAILY_SOFT_CAP);
+  if (!globalCheck.withinCap) {
+    logSecurityEvent("global_cap_reached", req);
+    return jsonResponse({ error: "service_busy" }, 429);
+  }
+
   // نقطة التوسع الوحيدة لتحديد خطة المستخدم (مجاني/مميز) — راجع lib/config.js
   const { dailyLimit, model } = resolvePlan();
 
@@ -125,8 +136,16 @@ export default async function handler(req) {
     cookieName: CONFIG.RATE_LIMIT_COOKIE_NAME,
     secret: rateLimitSecret,
     dailyLimit,
-    maxAgeSeconds: CONFIG.SECONDS_PER_DAY
+    maxAgeSeconds: CONFIG.SECONDS_PER_DAY,
+    minRequestIntervalMs: CONFIG.MIN_REQUEST_INTERVAL_MS
   });
+
+  if (usage.throttled) {
+    // المرحلة 3: رفض بسبب سرعة الإرسال فقط — لا يُحتسب من الرصيد اليومي،
+    // ورسالة مختلفة عمداً عن limit_reached حتى لا يظن المستخدم أن حصته
+    // اليومية انتهت.
+    return jsonResponse({ error: "too_fast", retryAfterMs: usage.retryAfterMs }, 429);
+  }
 
   if (!usage.allowed) {
     logSecurityEvent("limit_reached", req);
@@ -162,6 +181,10 @@ export default async function handler(req) {
     });
     return jsonResponse({ error: "ai_error" }, 502);
   }
+
+  // المرحلة 3: نزيد العدّاد العام فقط بعد نجاح فعلي، بنفس منطق usage.commit()
+  // أعلاه — طلب فشل لا يُحتسب من أي عدّاد (فردي أو عام).
+  incrementGlobalDailyUsage();
 
   const { cookieHeader, remaining } = await usage.commit();
 

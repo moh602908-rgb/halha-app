@@ -32,6 +32,7 @@ import { CONFIG, resolvePlan } from "../lib/config.js";
 import { resolveAndCall } from "../lib/providerManager.js";
 import { checkAndPrepareUsage, checkGlobalDailyCap, incrementGlobalDailyUsage } from "../lib/ratelimit.js";
 import { buildSystemPrompt, sanitizeHistory, sanitizeGuides } from "../lib/prompt.js";
+import { recordEvent } from "../lib/monitor.js";
 
 function jsonResponse(obj, status, extraHeaders) {
   return new Response(JSON.stringify(obj), {
@@ -72,6 +73,7 @@ export default async function handler(req) {
   }
   if (!checkSameOrigin(req)) {
     logSecurityEvent("forbidden_origin", req);
+    recordEvent("origin_block");
     return jsonResponse({ error: "forbidden_origin" }, 403);
   }
 
@@ -86,6 +88,7 @@ export default async function handler(req) {
   const contentLength = parseInt(req.headers.get("content-length") || "0", 10);
   if (contentLength > CONFIG.MAX_BODY_BYTES) {
     logSecurityEvent("payload_too_large", req);
+    recordEvent("validation_error");
     return jsonResponse({ error: "payload_too_large" }, 413);
   }
 
@@ -106,6 +109,7 @@ export default async function handler(req) {
   // بعض العملاء)، بعد القراءة مباشرة وقبل أي معالجة أخرى.
   if (rawText.length > CONFIG.MAX_BODY_BYTES) {
     logSecurityEvent("payload_too_large_actual", req);
+    recordEvent("validation_error");
     return jsonResponse({ error: "payload_too_large" }, 413);
   }
 
@@ -126,6 +130,7 @@ export default async function handler(req) {
   const globalCheck = checkGlobalDailyCap(CONFIG.GLOBAL_DAILY_SOFT_CAP);
   if (!globalCheck.withinCap) {
     logSecurityEvent("global_cap_reached", req);
+    recordEvent("quota_limit");
     return jsonResponse({ error: "service_busy" }, 429);
   }
 
@@ -144,11 +149,13 @@ export default async function handler(req) {
     // المرحلة 3: رفض بسبب سرعة الإرسال فقط — لا يُحتسب من الرصيد اليومي،
     // ورسالة مختلفة عمداً عن limit_reached حتى لا يظن المستخدم أن حصته
     // اليومية انتهت.
+    recordEvent("too_fast");
     return jsonResponse({ error: "too_fast", retryAfterMs: usage.retryAfterMs }, 429);
   }
 
   if (!usage.allowed) {
     logSecurityEvent("limit_reached", req);
+    recordEvent("quota_limit");
     return jsonResponse({
       error: "limit_reached",
       remaining: 0,
@@ -179,6 +186,7 @@ export default async function handler(req) {
       time: new Date().toISOString(),
       detail: String(e && e.message ? e.message : e).slice(0, 300)
     });
+    recordEvent("provider_error");
     return jsonResponse({ error: "ai_error" }, 502);
   }
 

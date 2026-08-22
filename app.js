@@ -2075,6 +2075,7 @@ const appEl = document.getElementById("app");
 const backBtn = document.getElementById("backBtn");
 
 let currentView = { name: "home" };
+history.replaceState(currentView, "");
 
 /* ============================================================
    محرك بحث عربي ذكي — يعمل بالكامل محليًا دون إنترنت أو أي خدمة خارجية
@@ -2292,6 +2293,8 @@ function debounce(fn, delay) {
 }
 
 function render() {
+  const fab = document.getElementById("assistantFab");
+  if (fab) fab.classList.toggle("fab--subtle", currentView.name === "guide");
   if (currentView.name === "home") return renderHome();
   if (currentView.name === "domain") return renderDomain(currentView.domainId);
   if (currentView.name === "guide") return renderGuide(currentView.domainId, currentView.guideIndex);
@@ -2415,7 +2418,6 @@ function buildGuideRow(domain, guide, index) {
   row.innerHTML = `
     <span class="guide-row__index">${domain.icon}</span>
     <span class="guide-row__title">${guide.title}</span>
-    <span class="guide-row__badge ${guide.ready ? "guide-row__badge--ready" : ""}">${guide.ready ? "جاهز" : "قريبًا"}</span>
   `;
   row.onclick = () => goTo({ name: "guide", domainId: domain.id, guideIndex: index });
   return row;
@@ -2458,6 +2460,7 @@ function renderGuide(domainId, guideIndex) {
     <div class="guide-header">
       <div class="guide-header__domain">${domain.icon} ${domain.name}</div>
       <h2 class="guide-header__title">${guide.title}</h2>
+      <span class="guide-header__trust">محتوى مُعد بعناية</span>
     </div>
     <div id="stepsWrap"></div>
     ${guide.note ? `<div class="callout">⚠️ ${guide.note}</div>` : ""}
@@ -2476,15 +2479,22 @@ function renderGuide(domainId, guideIndex) {
 function goTo(view) {
   currentView = view;
   window.scrollTo(0, 0);
+  history.pushState(view, "");
   render();
 }
 
+// زر الرجوع الداخلي: نستخدم history.back() بدل goTo() المباشر، حتى لا تتكرر
+// تسجيلات التنقل في تاريخ المتصفح (كل ضغطة على backBtn تصبح مجرد "رجوع"
+// حقيقي في التاريخ، لا انتقال جديد يُضاف فوقه).
 backBtn.addEventListener("click", () => {
-  if (currentView.name === "guide") {
-    goTo({ name: "domain", domainId: currentView.domainId });
-  } else {
-    goTo({ name: "home" });
-  }
+  history.back();
+});
+
+// دعم زر/إيماءة رجوع الهاتف: عند أي رجوع في تاريخ المتصفح، نعيد ضبط
+// currentView من الحالة المحفوظة ونعيد الرسم مباشرة (بدون pushState مجددًا).
+window.addEventListener("popstate", (e) => {
+  currentView = (e.state && e.state.name) ? e.state : { name: "home" };
+  render();
 });
 
 /* ============================================================
@@ -2533,7 +2543,7 @@ function addChatBubble(text, type) {
 function addTypingBubble() {
   const bubble = document.createElement("div");
   bubble.className = "chat-bubble chat-bubble--bot chat-bubble--typing";
-  bubble.innerHTML = `<span class="chat-bubble--typing__label">جارٍ التفكير</span><span class="chat-bubble--typing__dots"><span></span><span></span><span></span></span>`;
+  bubble.innerHTML = `<span class="chat-bubble--typing__label">جارٍ البحث عن إجابة مناسبة</span><span class="chat-bubble--typing__dots"><span></span><span></span><span></span></span>`;
   assistantFeed.appendChild(bubble);
   scrollFeedToBottom();
   return bubble;
@@ -2542,23 +2552,32 @@ function addTypingBubble() {
 // كل رسالة يُرسلها المستخدم تذهب مباشرة للذكاء الاصطناعي — تجربة محادثة
 // واحدة موحّدة. البحث في الأدلة ما زال يعمل داخليًا (راجع askAI أدناه)
 // لتحسين جودة الإجابة فقط، دون أن يرى المستخدم أي أثر له في الواجهة.
+// نمو تلقائي محدود لحقل الكتابة مع الكتابة — الحد الأقصى مضبوط عبر
+// max-height في CSS (~4 أسطر)، وبعده يتولى التمرير الداخلي الأمر تلقائيًا.
+function autoGrowInput() {
+  assistantInput.style.height = "auto";
+  assistantInput.style.height = assistantInput.scrollHeight + "px";
+}
+
 function handleAssistantSend() {
   const text = assistantInput.value.trim();
   if (!text) return;
   assistantInput.value = "";
+  autoGrowInput();
   addChatBubble(text, "user");
   askAI(text);
 }
 assistantSendBtn.addEventListener("click", handleAssistantSend);
-assistantInput.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") handleAssistantSend();
-});
+assistantInput.addEventListener("input", autoGrowInput);
+// ملاحظة: لا يوجد اعتراض لمفتاح Enter — يعمل بسلوكه الطبيعي داخل
+// textarea (سطر جديد)، والإرسال يتم فقط عبر الزر أعلاه.
 
 function openSheet() {
   overlay.classList.add("open");
   sheet.classList.add("open");
   sheet.setAttribute("aria-hidden", "false");
   assistantInput.value = "";
+  autoGrowInput();
   renderFeedFromHistoryOrWelcome();
   // تركيز تلقائي على مربع الكتابة عند الفتح — بعد مهلة قصيرة تطابق مدة
   // حركة انزلاق النافذة (CSS transition)، لسلوك أكثر ثباتًا عبر المتصفحات
@@ -2588,33 +2607,16 @@ overlay.addEventListener("click", closeSheet);
    ============================================================ */
 
 const AI_ENDPOINT = "/api/ask";
-const AI_OWN_KEY_STORAGE = "dallini_own_api_key";     // localStorage — يبقى بين الزيارات
 const AI_HISTORY_STORAGE = "dallini_ai_history";       // sessionStorage — يُمسح بإغلاق التبويب
 const AI_CACHE_STORAGE = "dallini_ai_cache";           // sessionStorage — لتفادي إرسال نفس السؤال مرتين
 const AI_MAX_HISTORY = 6;
-const AI_DIRECT_MODEL = "claude-haiku-4-5-20251001";
 
 const aiClearBtn = document.getElementById("aiClearBtn");
 const aiQuotaBadge = document.getElementById("aiQuotaBadge");
-const aiSettingsPanel = document.getElementById("aiSettingsPanel");
-const aiOwnKeyInput = document.getElementById("aiOwnKeyInput");
-const aiOwnKeySave = document.getElementById("aiOwnKeySave");
-const aiOwnKeyClear = document.getElementById("aiOwnKeyClear");
-const aiOwnKeyStatus = document.getElementById("aiOwnKeyStatus");
 
 let aiRequestInFlight = false;
 let lastKnownRemaining = null;
 let lastKnownLimit = null;
-
-function getOwnApiKey() {
-  try { return localStorage.getItem(AI_OWN_KEY_STORAGE) || ""; } catch { return ""; }
-}
-function setOwnApiKey(key) {
-  try {
-    if (key) localStorage.setItem(AI_OWN_KEY_STORAGE, key);
-    else localStorage.removeItem(AI_OWN_KEY_STORAGE);
-  } catch { /* التخزين غير متاح — تجاهل بصمت */ }
-}
 
 function loadAiHistory() {
   try { return JSON.parse(sessionStorage.getItem(AI_HISTORY_STORAGE) || "[]"); } catch { return []; }
@@ -2638,40 +2640,29 @@ function renderFeedFromHistoryOrWelcome() {
   history.forEach(m => addChatBubble(m.content, m.role === "user" ? "user" : "bot"));
 }
 
+const assistantInputDefaultPlaceholder = assistantInput.placeholder;
+
 function updateQuotaBadgeUI() {
-  if (getOwnApiKey()) {
-    aiQuotaBadge.textContent = "🔑 مفتاحك الخاص (بلا حد يومي)";
-    aiQuotaBadge.classList.remove("sheet__badge--warn");
-    return;
-  }
+  const quotaExhausted = lastKnownRemaining !== null && lastKnownRemaining <= 0;
+
   if (lastKnownRemaining === null) {
     aiQuotaBadge.textContent = "🤖 اسأل الذكاء الاصطناعي";
     aiQuotaBadge.classList.remove("sheet__badge--warn");
-    return;
+  } else {
+    aiQuotaBadge.textContent = `🤖 ${lastKnownRemaining} من ${lastKnownLimit} أسئلة اليوم`;
+    aiQuotaBadge.classList.toggle("sheet__badge--warn", quotaExhausted);
   }
-  aiQuotaBadge.textContent = `🤖 ${lastKnownRemaining} من ${lastKnownLimit} أسئلة اليوم`;
-  aiQuotaBadge.classList.toggle("sheet__badge--warn", lastKnownRemaining <= 0);
+
+  // قفل واجهة المستخدم (لا تغيير في حساب الحصة نفسه) عند نفاد الأسئلة اليومية،
+  // وإعادة فتحها تلقائيًا فور توفر أسئلة جديدة (remaining > 0).
+  assistantInput.disabled = quotaExhausted;
+  assistantSendBtn.disabled = quotaExhausted;
+  assistantInput.placeholder = quotaExhausted
+    ? "انتهت أسئلتك لهذا اليوم — تصفّح الأدلة الجاهزة"
+    : assistantInputDefaultPlaceholder;
 }
 updateQuotaBadgeUI();
 
-const aiDevSettingsToggle = document.getElementById("aiDevSettingsToggle");
-aiDevSettingsToggle.addEventListener("click", () => {
-  aiSettingsPanel.hidden = !aiSettingsPanel.hidden;
-  if (!aiSettingsPanel.hidden) aiOwnKeyInput.value = getOwnApiKey();
-});
-aiOwnKeySave.addEventListener("click", () => {
-  const key = aiOwnKeyInput.value.trim();
-  if (!key) { aiOwnKeyStatus.textContent = "أدخل مفتاحًا أولاً."; return; }
-  setOwnApiKey(key);
-  aiOwnKeyStatus.textContent = "تم الحفظ. سيُستخدم مفتاحك مباشرة من متصفحك من الآن.";
-  updateQuotaBadgeUI();
-});
-aiOwnKeyClear.addEventListener("click", () => {
-  setOwnApiKey("");
-  aiOwnKeyInput.value = "";
-  aiOwnKeyStatus.textContent = "تمت إزالة المفتاح. سيُستخدم الحد المجاني اليومي المشترك.";
-  updateQuotaBadgeUI();
-});
 // زر "محادثة جديدة" في رأس النافذة: يمسح محادثة الذكاء الاصطناعي المحفوظة
 // ويعيد عرض الترحيب والمختارات السريعة من جديد.
 aiClearBtn.addEventListener("click", () => {
@@ -2679,28 +2670,6 @@ aiClearBtn.addEventListener("click", () => {
   renderWelcome();
   assistantInput.focus();
 });
-
-async function callOwnKeyDirect(question, priorHistory, ownKey) {
-  const system = "أنت مساعد دلّني، مساعد داخل تطبيق يقدّم حلولاً عملية لمشاكل الحياة اليومية بالعربية. أجب بالعربية الفصحى المبسّطة، بإيجاز ووضوح، وقدّم خطوات عملية عند الإمكان. لا تقدّم تشخيصًا طبيًا أو استشارة قانونية متخصصة لحالة فردية، ووجّه المستخدم لمختص عند الحاجة الفعلية.";
-  const messages = [...priorHistory, { role: "user", content: question }];
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "x-api-key": ownKey,
-      "anthropic-version": "2023-06-01",
-      "content-type": "application/json",
-      "anthropic-dangerous-direct-browser-access": "true"
-    },
-    body: JSON.stringify({ model: AI_DIRECT_MODEL, max_tokens: 700, system, messages })
-  });
-  if (!res.ok) {
-    const errBody = await res.json().catch(() => null);
-    throw new Error((errBody && errBody.error && errBody.error.message) || ("خطأ " + res.status));
-  }
-  const data = await res.json();
-  const block = (data.content || []).find(b => b.type === "text");
-  return (block && block.text && block.text.trim()) || "لم أستطع إيجاد إجابة واضحة.";
-}
 
 async function askAI(rawQuestion) {
   const question = String(rawQuestion || "").trim();
@@ -2725,70 +2694,60 @@ async function askAI(rawQuestion) {
   assistantSendBtn.disabled = true;
   assistantInput.disabled = true;
   const typingBubble = addTypingBubble();
-  const ownKey = getOwnApiKey();
 
   try {
     let answer;
 
-    if (ownKey) {
-      answer = await callOwnKeyDirect(question, priorHistory, ownKey);
-      typingBubble.remove();
-      addChatBubble(answer, "bot");
-    } else {
-      // البحث المحلي أولاً لاختيار سياق مختصر وذي صلة نرسله مع السؤال
-      // (يحسّن جودة الإجابة ويقلل حجم الطلب المرسل، وبالتالي التكلفة).
-      const { results } = searchGuides(question, 3);
-      const guides = results.map(r => ({ title: r.guide.title, steps: r.guide.steps }));
+    // البحث المحلي أولاً لاختيار سياق مختصر وذي صلة نرسله مع السؤال
+    // (يحسّن جودة الإجابة ويقلل حجم الطلب المرسل، وبالتالي التكلفة).
+    const { results } = searchGuides(question, 3);
+    const guides = results.map(r => ({ title: r.guide.title, steps: r.guide.steps }));
 
-      const res = await fetch(AI_ENDPOINT, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        credentials: "same-origin",
-        body: JSON.stringify({ question, history: priorHistory, guides })
-      });
-      typingBubble.remove();
+    const res = await fetch(AI_ENDPOINT, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify({ question, history: priorHistory, guides })
+    });
+    typingBubble.remove();
 
-      if (res.status === 429) {
-        const data = await res.json().catch(() => ({}));
-        lastKnownRemaining = 0;
-        lastKnownLimit = data.limit || lastKnownLimit;
-        updateQuotaBadgeUI();
-        const resetMsg = data.resetHint ? (" " + data.resetHint) : "";
-        addChatBubble(`استخدمت كل أسئلتك المجانية لهذا اليوم (${lastKnownLimit}).${resetMsg} يمكنك أيضًا تصفّح الأدلة الجاهزة، أو إضافة مفتاح API خاص بك من "خيارات متقدمة للمطوّرين" لأسئلة غير محدودة.`, "error");
-        history.pop();
-        saveAiHistory(history);
-        aiRequestInFlight = false;
-        assistantSendBtn.disabled = false;
-        assistantInput.disabled = false;
-        return;
-      }
-      if (res.status === 413) {
-        addChatBubble("سؤالك أو سجل المحادثة أصبح طويلاً جدًا. اضغط زر «محادثة جديدة» أعلى النافذة وحاول مجددًا بسؤال أقصر.", "error");
-        history.pop();
-        saveAiHistory(history);
-        aiRequestInFlight = false;
-        assistantSendBtn.disabled = false;
-        assistantInput.disabled = false;
-        return;
-      }
-      if (!res.ok) {
-        // نقرأ رمز الخطأ الحقيقي من الخادم بدل عرض رسالة عامة واحدة لكل شيء —
-        // هذا يسمح بتمييز خطأ الإعداد (متغيرات بيئة ناقصة على Vercel) عن خطأ
-        // فعلي في الاتصال بمزوّد الذكاء الاصطناعي عن أي مشكلة أخرى.
-        const errData = await res.json().catch(() => ({}));
-        const err = new Error("server_error_" + res.status);
-        err.code = errData.error || ("http_" + res.status);
-        err.httpStatus = res.status;
-        throw err;
-      }
-
-      const data = await res.json();
-      answer = data.answer;
-      lastKnownRemaining = data.remaining;
-      lastKnownLimit = data.limit;
+    if (res.status === 429) {
+      const data = await res.json().catch(() => ({}));
+      lastKnownRemaining = 0;
+      lastKnownLimit = data.limit || lastKnownLimit;
+      const resetMsg = data.resetHint ? (" " + data.resetHint) : "";
+      addChatBubble(`استخدمت عدد الأسئلة المتاحة لك اليوم (${lastKnownLimit}).${resetMsg} يمكنك الاستمرار في تصفّح الأدلة الجاهزة، وستتوفر أسئلة جديدة قريبًا.`, "error");
+      history.pop();
+      saveAiHistory(history);
+      aiRequestInFlight = false;
       updateQuotaBadgeUI();
-      addChatBubble(answer, "bot");
+      return;
     }
+    if (res.status === 413) {
+      addChatBubble("سؤالك أو سجل المحادثة أصبح طويلاً جدًا. اضغط زر «محادثة جديدة» أعلى النافذة وحاول مجددًا بسؤال أقصر.", "error");
+      history.pop();
+      saveAiHistory(history);
+      aiRequestInFlight = false;
+      updateQuotaBadgeUI();
+      return;
+    }
+    if (!res.ok) {
+      // نقرأ رمز الخطأ الحقيقي من الخادم بدل عرض رسالة عامة واحدة لكل شيء —
+      // هذا يسمح بتمييز خطأ الإعداد (متغيرات بيئة ناقصة على Vercel) عن خطأ
+      // فعلي في الاتصال بمزوّد الذكاء الاصطناعي عن أي مشكلة أخرى.
+      const errData = await res.json().catch(() => ({}));
+      const err = new Error("server_error_" + res.status);
+      err.code = errData.error || ("http_" + res.status);
+      err.httpStatus = res.status;
+      throw err;
+    }
+
+    const data = await res.json();
+    answer = data.answer;
+    lastKnownRemaining = data.remaining;
+    lastKnownLimit = data.limit;
+    updateQuotaBadgeUI();
+    addChatBubble(answer, "bot");
 
     cache[cacheKey] = answer;
     saveAiCache(cache);
@@ -2797,26 +2756,23 @@ async function askAI(rawQuestion) {
   } catch (err) {
     typingBubble.remove();
     let message;
-    if (ownKey) {
-      // مسار "مفتاحك الخاص" فقط — هنا فعلاً من المنطقي التلميح لمشكلة بالمفتاح، لأن المستخدم أدخله بنفسه.
-      message = "تعذّر الاتصال بمفتاحك الخاص. تحقق من صحته ومن رصيده في حساب Anthropic، أو من اتصالك بالإنترنت، وحاول مجددًا.";
-    } else if (err && err.code === "server_not_configured") {
+    if (err && err.code === "server_not_configured") {
       // خطأ إعداد على مستوى المشروع (متغيرات بيئة ناقصة على Vercel) — ليس خطأ من المستخدم أبدًا ولا علاقة له بأي مفتاح لديه.
       message = "الذكاء الاصطناعي غير مُفعَّل بعد على هذا التطبيق. يمكنك الاستمرار في استخدام البحث والأدلة الجاهزة بشكل طبيعي.";
     } else if (err && err.code === "ai_error") {
-      message = "تعذّر الاتصال بالذكاء الاصطناعي حاليًا (قد يكون الخادم مشغولاً). جرّب لاحقًا، أو تابع استخدام البحث والأدلة الجاهزة.";
+      message = "تعذّر الاتصال بالمساعد الذكي حاليًا. جرّب لاحقًا، أو تابع استخدام البحث والأدلة الجاهزة.";
     } else if (err && (err.code === "forbidden_origin" || err.code === "unsupported_content_type" || err.code === "bad_request")) {
-      message = "حدث خطأ تقني غير متوقع أثناء التواصل مع الخادم. جرّب تحديث الصفحة والمحاولة مجددًا.";
+      message = "حدث خطأ غير متوقع. جرّب تحديث الصفحة والمحاولة مجددًا.";
     } else if (err && err.httpStatus === 404) {
       // وصل الطلب فعليًا وحصل على رد من الخادم (وليس فشل شبكة)، لكن المسار /api/ask نفسه غير موجود —
       // هذا يشير بوضوح لمشكلة نشر/إعداد على Vercel (الدالة غير منشورة بشكل صحيح)، وليس مشكلة اتصال إنترنت للمستخدم.
-      message = "تعذّر الوصول لخدمة الذكاء الاصطناعي (الرابط غير موجود على الخادم — رمز 404). هذه على الأرجح مشكلة إعداد لدى مالك التطبيق وليست من طرفك. يمكنك متابعة استخدام البحث والأدلة الجاهزة.";
+      message = "تعذّر الوصول للمساعد الذكي حاليًا. يمكنك متابعة استخدام البحث والأدلة الجاهزة، وسنعمل على حل الأمر.";
     } else if (err && err.httpStatus) {
       // وصلت استجابة فعلية من الخادم برمز غير متوقع — نعرضه صراحة بدل تخمين "مشكلة إنترنت".
-      message = `حدث خطأ غير متوقع من الخادم (رمز ${err.httpStatus}). جرّب لاحقًا، أو تابع استخدام البحث والأدلة الجاهزة.`;
+      message = "حدث خطأ غير متوقع. جرّب لاحقًا، أو تابع استخدام البحث والأدلة الجاهزة.";
     } else {
       // لا استجابة من الخادم إطلاقًا (فشل fetch نفسه) — هذا هو السيناريو الوحيد الذي يستحق التلميح الفعلي لمشكلة اتصال إنترنت.
-      message = "تعذّر الوصول للخادم الآن. تحقق من اتصالك بالإنترنت وحاول مجددًا.";
+      message = "تعذّر الاتصال الآن. تحقق من اتصالك بالإنترنت وحاول مجددًا.";
     }
     addChatBubble(message, "error");
     history.pop();
@@ -2824,8 +2780,7 @@ async function askAI(rawQuestion) {
   }
 
   aiRequestInFlight = false;
-  assistantSendBtn.disabled = false;
-  assistantInput.disabled = false;
+  updateQuotaBadgeUI();
   assistantInput.focus();
 }
 

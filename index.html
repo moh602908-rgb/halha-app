@@ -27,7 +27,7 @@
     </button>
     <div class="logo-block">
       <h1 class="logo">دلّني <span class="logo-ai">AI</span></h1>
-      <p class="logo-sub">حلول ذكية للحياة اليومية</p>
+      <p class="logo-sub">مرجع عربي منظم، ومساعد ذكي عند الحاجة</p>
     </div>
   </div>
 </header>
@@ -54,28 +54,14 @@
     </div>
   </div>
 
-  <div class="ai-settings" id="aiSettingsPanel" hidden>
-    <p class="ai-settings__desc">
-      هذا الخيار مخصّص للمطوّرين ومن يمتلك حساب Anthropic API الخاص به فقط، وليس ضروريًا للاستخدام العادي للتطبيق. يمكنك استخدام مفتاحك الخاص لأسئلة غير محدودة — يُحفظ في متصفحك فقط ولا يصل أبدًا لخوادمنا، والاتصال يتم مباشرة من جهازك لمزوّد الخدمة.
-    </p>
-    <input type="password" id="aiOwnKeyInput" placeholder="sk-ant-... (اختياري)" autocomplete="off" />
-    <div class="ai-settings__actions">
-      <button class="btn btn--outline" id="aiOwnKeySave">حفظ المفتاح</button>
-      <button class="btn btn--ghost" id="aiOwnKeyClear">إزالة المفتاح</button>
-    </div>
-    <p class="ai-settings__note" id="aiOwnKeyStatus"></p>
-  </div>
-
   <div class="assistant-feed" id="assistantFeed"></div>
 
   <div class="assistant-inputbar">
-    <input type="text" id="assistantInput" placeholder="اكتب مشكلتك... مثال: تسرب ماء" autocomplete="off" />
+    <textarea id="assistantInput" placeholder="اكتب مشكلتك... مثال: تسرب ماء" rows="1"></textarea>
     <button type="button" class="assistant-inputbar__send" id="assistantSendBtn" aria-label="إرسال">
       <svg width="19" height="19" viewBox="0 0 24 24" fill="none"><path d="M4 12H20M20 12L14 6M20 12L14 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
   </div>
-
-  <button class="ai-dev-link" id="aiDevSettingsToggle" type="button">خيارات متقدمة للمطوّرين</button>
 </section>
 
 <script src="app.js"></script>

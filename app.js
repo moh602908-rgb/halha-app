@@ -2590,6 +2590,7 @@ function closeSheet() {
   sheet.setAttribute("aria-hidden", "true");
 }
 document.getElementById("assistantFab").addEventListener("click", openSheet);
+document.getElementById("assistantBackBtn").addEventListener("click", closeSheet);
 overlay.addEventListener("click", closeSheet);
 
 /* ============================================================
@@ -2658,7 +2659,7 @@ function updateQuotaBadgeUI() {
   assistantInput.disabled = quotaExhausted;
   assistantSendBtn.disabled = quotaExhausted;
   assistantInput.placeholder = quotaExhausted
-    ? "انتهت أسئلتك لهذا اليوم — تصفّح الأدلة الجاهزة"
+    ? "انتهت أسئلتك اليوم — تصفّح الأدلة"
     : assistantInputDefaultPlaceholder;
 }
 updateQuotaBadgeUI();

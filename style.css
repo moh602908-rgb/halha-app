@@ -392,9 +392,13 @@ main#app {
 .sheet__header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 8px;
   margin-bottom: 10px;
   flex-shrink: 0;
+}
+.sheet__header .back-btn {
+  background: var(--primary-tint);
+  color: var(--primary-dark);
 }
 .sheet__title { font-family: var(--font-display); font-size: 19px; margin: 0; }
 .sheet__badge {
@@ -451,7 +455,7 @@ main#app {
 }
 
 /* ===== رأس النافذة: الشارة + زر محادثة جديدة ===== */
-.sheet__header-actions { display: flex; align-items: center; gap: 8px; }
+.sheet__header-actions { display: flex; align-items: center; gap: 8px; margin-inline-start: auto; }
 .sheet__reset {
   display: flex; align-items: center; justify-content: center;
   width: 30px; height: 30px;

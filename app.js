@@ -2078,10 +2078,12 @@ const aboutLink = document.getElementById("aboutLink");
 let currentView = { name: "home" };
 history.replaceState(currentView, "");
 
-aboutLink.addEventListener("click", (e) => {
-  e.preventDefault();
-  goTo({ name: "about" });
-});
+if (aboutLink) {
+  aboutLink.addEventListener("click", (e) => {
+    e.preventDefault();
+    goTo({ name: "about" });
+  });
+}
 
 /* ============================================================
    محرك بحث عربي ذكي — يعمل بالكامل محليًا دون إنترنت أو أي خدمة خارجية

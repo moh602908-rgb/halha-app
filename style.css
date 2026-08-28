@@ -468,12 +468,21 @@ main#app {
 /* ===== شعار "جارٍ التفكير" — مؤشر انتظار المساعد (الصورة الفعلية) ===== */
 .chat-bubble--typing { flex-direction: column; align-items: center; gap: 2px; padding: 10px 10px 14px; background: transparent; }
 .thinking-logo {
-  width: 92px; height: 92px;
+  position: relative;
+  width: 36px; height: 36px;
   display: flex; align-items: center; justify-content: center;
   overflow: visible;
   perspective: 900px;
 }
-.thinking-logo__img {
+.thinking-logo__static {
+  position: absolute;
+  inset: 0;
+  width: 100%; height: 100%;
+  object-fit: contain;
+}
+.thinking-logo__mark {
+  position: absolute;
+  inset: 0;
   width: 100%; height: 100%;
   object-fit: contain;
   animation: thinking-logo-spin 5.5s ease-in-out infinite;
@@ -483,7 +492,7 @@ main#app {
   from { transform: rotateY(0deg); }
   to { transform: rotateY(360deg); }
 }
-.thinking-logo__text { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.thinking-logo__text { display: none; }
 .thinking-logo__title { font-size: 13px; font-weight: 600; color: var(--sheet-text); }
 .thinking-logo__subtitle { font-size: 11.5px; color: var(--sheet-text-soft); }
 

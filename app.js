@@ -2566,7 +2566,7 @@ function addChatBubble(text, type) {
 function addTypingBubble() {
   const bubble = document.createElement("div");
   bubble.className = "chat-bubble chat-bubble--bot chat-bubble--typing";
-  bubble.innerHTML = `<span class="chat-bubble--typing__label">جارٍ البحث عن إجابة مناسبة</span><span class="chat-bubble--typing__dots"><span></span><span></span><span></span></span>`;
+  bubble.innerHTML = `<span class="thinking-logo" aria-hidden="true"><img class="thinking-logo__img" src="assets/thinking-icon.png" alt="" /></span><span class="thinking-logo__text"><span class="thinking-logo__title">جارٍ التفكير...</span><span class="thinking-logo__subtitle">نبحث عن أفضل إجابة لك</span></span>`;
   assistantFeed.appendChild(bubble);
   scrollFeedToBottom();
   return bubble;

@@ -127,7 +127,7 @@ export default async function handler(req) {
 
   // المرحلة 3: فحص السقف العام التقديري أولاً (Best-effort، راجع
   // lib/ratelimit.js) — لا يستهلك شيئاً بحد ذاته، فحص فقط.
-  const globalCheck = checkGlobalDailyCap(CONFIG.GLOBAL_DAILY_SOFT_CAP);
+  const globalCheck = await checkGlobalDailyCap(CONFIG.GLOBAL_DAILY_SOFT_CAP);
   if (!globalCheck.withinCap) {
     logSecurityEvent("global_cap_reached", req);
     recordEvent("quota_limit");
@@ -192,7 +192,7 @@ export default async function handler(req) {
 
   // المرحلة 3: نزيد العدّاد العام فقط بعد نجاح فعلي، بنفس منطق usage.commit()
   // أعلاه — طلب فشل لا يُحتسب من أي عدّاد (فردي أو عام).
-  incrementGlobalDailyUsage();
+  await incrementGlobalDailyUsage();
 
   const { cookieHeader, remaining } = await usage.commit();
 

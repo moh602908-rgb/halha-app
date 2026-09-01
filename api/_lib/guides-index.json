@@ -1,0 +1,849 @@
+{
+  "_comment": "ملف مشتق آليًا من app.js عبر scripts/extract-guides-index.mjs. لا يُعدَّل يدويًا أبدًا. لأغراض التصنيف في intent.js فقط.",
+  "generatedAt": "2026-09-01T18:50:36.599Z",
+  "sourceFile": "app.js",
+  "totalDomains": 24,
+  "totalGuides": 168,
+  "guides": [
+    {
+      "domainId": "home",
+      "domainName": "البيت والصيانة",
+      "guideTitle": "تسرب ماء بسيط تحت الحوض"
+    },
+    {
+      "domainId": "home",
+      "domainName": "البيت والصيانة",
+      "guideTitle": "انقطاع الكهرباء عن غرفة واحدة فقط"
+    },
+    {
+      "domainId": "home",
+      "domainName": "البيت والصيانة",
+      "guideTitle": "رائحة كريهة من المطبخ أو الحمام"
+    },
+    {
+      "domainId": "home",
+      "domainName": "البيت والصيانة",
+      "guideTitle": "انسداد بالوعة بسيط"
+    },
+    {
+      "domainId": "home",
+      "domainName": "البيت والصيانة",
+      "guideTitle": "صرصور أو حشرات في المطبخ"
+    },
+    {
+      "domainId": "home",
+      "domainName": "البيت والصيانة",
+      "guideTitle": "جهاز التكييف لا يبرد جيدًا"
+    },
+    {
+      "domainId": "home",
+      "domainName": "البيت والصيانة",
+      "guideTitle": "تنظيف وصيانة دورية بسيطة لفلاتر التكييف والمطبخ"
+    },
+    {
+      "domainId": "tech",
+      "domainName": "التقنية اليومية",
+      "guideTitle": "ارتفاع حرارة الهاتف بشكل مفرط"
+    },
+    {
+      "domainId": "tech",
+      "domainName": "التقنية اليومية",
+      "guideTitle": "توفير استهلاك البطارية وإطالة عمرها"
+    },
+    {
+      "domainId": "tech",
+      "domainName": "التقنية اليومية",
+      "guideTitle": "الهاتف بطيء فجأة"
+    },
+    {
+      "domainId": "tech",
+      "domainName": "التقنية اليومية",
+      "guideTitle": "نسيان كلمة سر حساب مهم"
+    },
+    {
+      "domainId": "tech",
+      "domainName": "التقنية اليومية",
+      "guideTitle": "مساحة تخزين الهاتف ممتلئة"
+    },
+    {
+      "domainId": "tech",
+      "domainName": "التقنية اليومية",
+      "guideTitle": "الواي فاي بطيء أو ينقطع"
+    },
+    {
+      "domainId": "tech",
+      "domainName": "التقنية اليومية",
+      "guideTitle": "اختيار وتنظيم التطبيقات لهاتف أسرع وأقل تشتيتًا"
+    },
+    {
+      "domainId": "money",
+      "domainName": "المال الشخصي",
+      "guideTitle": "راتبي ينتهي قبل نهاية الشهر"
+    },
+    {
+      "domainId": "money",
+      "domainName": "المال الشخصي",
+      "guideTitle": "كيف أبدأ ميزانية شهرية بسيطة من الصفر"
+    },
+    {
+      "domainId": "money",
+      "domainName": "المال الشخصي",
+      "guideTitle": "أساسيات الادخار حتى بمبلغ صغير جدًا"
+    },
+    {
+      "domainId": "money",
+      "domainName": "المال الشخصي",
+      "guideTitle": "الفرق بين الدين الجيد والدين السيئ"
+    },
+    {
+      "domainId": "money",
+      "domainName": "المال الشخصي",
+      "guideTitle": "مراجعة الاشتراكات الشهرية غير الضرورية"
+    },
+    {
+      "domainId": "money",
+      "domainName": "المال الشخصي",
+      "guideTitle": "خطوات أولية قبل شراء كبير"
+    },
+    {
+      "domainId": "money",
+      "domainName": "المال الشخصي",
+      "guideTitle": "التعامل مع دين متراكم بخطة واقعية وتدريجية"
+    },
+    {
+      "domainId": "family",
+      "domainName": "الأسرة والتربية",
+      "guideTitle": "طفلي يرفض النوم في وقته"
+    },
+    {
+      "domainId": "family",
+      "domainName": "الأسرة والتربية",
+      "guideTitle": "كيف أضع حدودًا صحية مع أفراد العائلة دون خصام"
+    },
+    {
+      "domainId": "family",
+      "domainName": "الأسرة والتربية",
+      "guideTitle": "طفل يرفض الطعام"
+    },
+    {
+      "domainId": "family",
+      "domainName": "الأسرة والتربية",
+      "guideTitle": "كيف أتعامل مع نوبة غضب طفل في مكان عام"
+    },
+    {
+      "domainId": "family",
+      "domainName": "الأسرة والتربية",
+      "guideTitle": "تحسين التواصل مع مراهق أصبح منعزلاً"
+    },
+    {
+      "domainId": "family",
+      "domainName": "الأسرة والتربية",
+      "guideTitle": "تعليم الطفل تحمّل المسؤولية بمهام منزلية بسيطة حسب عمره"
+    },
+    {
+      "domainId": "family",
+      "domainName": "الأسرة والتربية",
+      "guideTitle": "التعامل مع الغيرة بين الإخوة"
+    },
+    {
+      "domainId": "health",
+      "domainName": "الصحة اليومية",
+      "guideTitle": "صداع متكرر بسيط"
+    },
+    {
+      "domainId": "health",
+      "domainName": "الصحة اليومية",
+      "guideTitle": "أرق وصعوبة نوم"
+    },
+    {
+      "domainId": "health",
+      "domainName": "الصحة اليومية",
+      "guideTitle": "إرهاق مستمر رغم النوم الكافي"
+    },
+    {
+      "domainId": "health",
+      "domainName": "الصحة اليومية",
+      "guideTitle": "حرقة أو انزعاج معدة بسيط بعد الأكل"
+    },
+    {
+      "domainId": "health",
+      "domainName": "الصحة اليومية",
+      "guideTitle": "ألم ظهر خفيف من الجلوس الطويل"
+    },
+    {
+      "domainId": "health",
+      "domainName": "الصحة اليومية",
+      "guideTitle": "الحفاظ على ترطيب كافٍ للجسم خلال اليوم"
+    },
+    {
+      "domainId": "health",
+      "domainName": "الصحة اليومية",
+      "guideTitle": "بناء روتين صباحي بسيط يمنحك طاقة ليوم كامل"
+    },
+    {
+      "domainId": "study",
+      "domainName": "الدراسة والعمل",
+      "guideTitle": "التسويف والمماطلة في الدراسة أو العمل"
+    },
+    {
+      "domainId": "study",
+      "domainName": "الدراسة والعمل",
+      "guideTitle": "تحضير سيرة ذاتية بدون خبرة سابقة"
+    },
+    {
+      "domainId": "study",
+      "domainName": "الدراسة والعمل",
+      "guideTitle": "التحضير لمقابلة عمل بثقة"
+    },
+    {
+      "domainId": "study",
+      "domainName": "الدراسة والعمل",
+      "guideTitle": "تنظيم الوقت بين عدة مهام متزامنة"
+    },
+    {
+      "domainId": "study",
+      "domainName": "الدراسة والعمل",
+      "guideTitle": "التعامل مع زميل عمل أو دراسة صعب"
+    },
+    {
+      "domainId": "study",
+      "domainName": "الدراسة والعمل",
+      "guideTitle": "فقدان التركيز أثناء المذاكرة أو العمل"
+    },
+    {
+      "domainId": "study",
+      "domainName": "الدراسة والعمل",
+      "guideTitle": "تنظيم مساحة العمل أو الدراسة لزيادة التركيز"
+    },
+    {
+      "domainId": "admin",
+      "domainName": "الخدمات والإجراءات الإدارية",
+      "guideTitle": "تجديد وثيقة رسمية منتهية الصلاحية"
+    },
+    {
+      "domainId": "admin",
+      "domainName": "الخدمات والإجراءات الإدارية",
+      "guideTitle": "فقدان بطاقة هوية أو وثيقة مهمة"
+    },
+    {
+      "domainId": "admin",
+      "domainName": "الخدمات والإجراءات الإدارية",
+      "guideTitle": "فتح حساب بنكي لأول مرة"
+    },
+    {
+      "domainId": "admin",
+      "domainName": "الخدمات والإجراءات الإدارية",
+      "guideTitle": "تقديم شكوى رسمية بفعالية"
+    },
+    {
+      "domainId": "admin",
+      "domainName": "الخدمات والإجراءات الإدارية",
+      "guideTitle": "متابعة معاملة إدارية متأخرة"
+    },
+    {
+      "domainId": "admin",
+      "domainName": "الخدمات والإجراءات الإدارية",
+      "guideTitle": "التسجيل والتعامل مع الخدمات الحكومية الإلكترونية"
+    },
+    {
+      "domainId": "admin",
+      "domainName": "الخدمات والإجراءات الإدارية",
+      "guideTitle": "حفظ الوثائق الرسمية المهمة بأمان رقميًا وورقيًا"
+    },
+    {
+      "domainId": "car",
+      "domainName": "السيارات والتنقل",
+      "guideTitle": "السيارة لا تعمل فجأة (بطارية فارغة)"
+    },
+    {
+      "domainId": "car",
+      "domainName": "السيارات والتنقل",
+      "guideTitle": "إطار مثقوب أثناء القيادة"
+    },
+    {
+      "domainId": "car",
+      "domainName": "السيارات والتنقل",
+      "guideTitle": "ضوء تحذير مفاجئ في لوحة القيادة"
+    },
+    {
+      "domainId": "car",
+      "domainName": "السيارات والتنقل",
+      "guideTitle": "صيانة دورية أساسية للسيارة"
+    },
+    {
+      "domainId": "car",
+      "domainName": "السيارات والتنقل",
+      "guideTitle": "التصرف الصحيح عند حادث سيارة بسيط"
+    },
+    {
+      "domainId": "car",
+      "domainName": "السيارات والتنقل",
+      "guideTitle": "تنظيف وصيانة داخلية بسيطة للسيارة"
+    },
+    {
+      "domainId": "car",
+      "domainName": "السيارات والتنقل",
+      "guideTitle": "التصرف الصحيح عند نفاد الوقود في مكان غير متوقع"
+    },
+    {
+      "domainId": "shopping",
+      "domainName": "الشراء والاستهلاك",
+      "guideTitle": "كيف أتأكد أن المنتج ليس مقلّدًا أو مغشوشًا"
+    },
+    {
+      "domainId": "shopping",
+      "domainName": "الشراء والاستهلاك",
+      "guideTitle": "استخدام الضمان لاسترجاع أو إصلاح منتج معيب"
+    },
+    {
+      "domainId": "shopping",
+      "domainName": "الشراء والاستهلاك",
+      "guideTitle": "مقارنة المنتجات قبل الشراء بذكاء"
+    },
+    {
+      "domainId": "shopping",
+      "domainName": "الشراء والاستهلاك",
+      "guideTitle": "التعرف على حيل التسويق الشائعة"
+    },
+    {
+      "domainId": "shopping",
+      "domainName": "الشراء والاستهلاك",
+      "guideTitle": "إرجاع منتج اشتُري عبر الإنترنت"
+    },
+    {
+      "domainId": "shopping",
+      "domainName": "الشراء والاستهلاك",
+      "guideTitle": "التسوق الذكي خلال مواسم التخفيضات والعروض"
+    },
+    {
+      "domainId": "shopping",
+      "domainName": "الشراء والاستهلاك",
+      "guideTitle": "تتبع مصاريف التسوق الشهرية لتفادي الإنفاق الزائد"
+    },
+    {
+      "domainId": "emergency",
+      "domainName": "الطوارئ والسلامة",
+      "guideTitle": "الاشتباه بتسرب غاز في المنزل"
+    },
+    {
+      "domainId": "emergency",
+      "domainName": "الطوارئ والسلامة",
+      "guideTitle": "إسعافات أولية أساسية لحرق بسيط"
+    },
+    {
+      "domainId": "emergency",
+      "domainName": "الطوارئ والسلامة",
+      "guideTitle": "إسعافات أولية لجرح أو نزيف بسيط"
+    },
+    {
+      "domainId": "emergency",
+      "domainName": "الطوارئ والسلامة",
+      "guideTitle": "التصرف عند اختناق شخص (طعام عالق في الحلق)"
+    },
+    {
+      "domainId": "emergency",
+      "domainName": "الطوارئ والسلامة",
+      "guideTitle": "التصرف عند اندلاع حريق صغير في المنزل"
+    },
+    {
+      "domainId": "emergency",
+      "domainName": "الطوارئ والسلامة",
+      "guideTitle": "التصرف أثناء موجة حر شديدة"
+    },
+    {
+      "domainId": "emergency",
+      "domainName": "الطوارئ والسلامة",
+      "guideTitle": "التصرف عند فيضان مياه مفاجئ في المنزل"
+    },
+    {
+      "domainId": "travel",
+      "domainName": "السفر والسياحة",
+      "guideTitle": "فقدان الحقيبة أو تأخرها في المطار"
+    },
+    {
+      "domainId": "travel",
+      "domainName": "السفر والسياحة",
+      "guideTitle": "تحضير قائمة سفر عملية قبل الرحلة"
+    },
+    {
+      "domainId": "travel",
+      "domainName": "السفر والسياحة",
+      "guideTitle": "تجنّب رسوم الهاتف الباهظة أثناء السفر"
+    },
+    {
+      "domainId": "travel",
+      "domainName": "السفر والسياحة",
+      "guideTitle": "التعامل مع تأخير أو إلغاء رحلة طيران"
+    },
+    {
+      "domainId": "travel",
+      "domainName": "السفر والسياحة",
+      "guideTitle": "حجز فندق موثوق بأفضل سعر"
+    },
+    {
+      "domainId": "travel",
+      "domainName": "السفر والسياحة",
+      "guideTitle": "التنقل بأمان في مدينة جديدة لأول مرة"
+    },
+    {
+      "domainId": "travel",
+      "domainName": "السفر والسياحة",
+      "guideTitle": "توفير المال أثناء التخطيط لرحلة"
+    },
+    {
+      "domainId": "children",
+      "domainName": "الأطفال",
+      "guideTitle": "تعليم الطفل عادات النظافة الشخصية الأساسية"
+    },
+    {
+      "domainId": "children",
+      "domainName": "الأطفال",
+      "guideTitle": "تأمين المنزل ليكون آمنًا لطفل يزحف أو يمشي"
+    },
+    {
+      "domainId": "children",
+      "domainName": "الأطفال",
+      "guideTitle": "متى أقلق بشأن نمو أو تطور طفلي"
+    },
+    {
+      "domainId": "children",
+      "domainName": "الأطفال",
+      "guideTitle": "إدارة وقت الشاشات للأطفال بشكل صحي"
+    },
+    {
+      "domainId": "children",
+      "domainName": "الأطفال",
+      "guideTitle": "تحضير حقيبة طوارئ أساسية للطفل"
+    },
+    {
+      "domainId": "children",
+      "domainName": "الأطفال",
+      "guideTitle": "تشجيع الطفل على حب القراءة منذ الصغر"
+    },
+    {
+      "domainId": "children",
+      "domainName": "الأطفال",
+      "guideTitle": "مساعدة الطفل على التأقلم مع أول يوم دراسة أو حضانة"
+    },
+    {
+      "domainId": "mental",
+      "domainName": "الصحة النفسية وإدارة التوتر",
+      "guideTitle": "التعامل مع شعور القلق المفاجئ"
+    },
+    {
+      "domainId": "mental",
+      "domainName": "الصحة النفسية وإدارة التوتر",
+      "guideTitle": "خطوات يومية بسيطة لتقليل التوتر المتراكم"
+    },
+    {
+      "domainId": "mental",
+      "domainName": "الصحة النفسية وإدارة التوتر",
+      "guideTitle": "التعرف على علامات الإرهاق النفسي (Burnout)"
+    },
+    {
+      "domainId": "mental",
+      "domainName": "الصحة النفسية وإدارة التوتر",
+      "guideTitle": "دعم شخص مقرب يمر بضيق نفسي"
+    },
+    {
+      "domainId": "mental",
+      "domainName": "الصحة النفسية وإدارة التوتر",
+      "guideTitle": "متى يجب طلب مساعدة مختص نفسي"
+    },
+    {
+      "domainId": "mental",
+      "domainName": "الصحة النفسية وإدارة التوتر",
+      "guideTitle": "أخذ استراحة ذهنية فعالة خلال يوم مزدحم"
+    },
+    {
+      "domainId": "mental",
+      "domainName": "الصحة النفسية وإدارة التوتر",
+      "guideTitle": "بناء روتين مسائي بسيط يساعد على الاسترخاء"
+    },
+    {
+      "domainId": "selfdev",
+      "domainName": "تنمية الذات والمهارات",
+      "guideTitle": "تعلّم مهارة جديدة بفعالية بوقت محدود"
+    },
+    {
+      "domainId": "selfdev",
+      "domainName": "تنمية الذات والمهارات",
+      "guideTitle": "بناء عادة جديدة والثبات عليها"
+    },
+    {
+      "domainId": "selfdev",
+      "domainName": "تنمية الذات والمهارات",
+      "guideTitle": "التغلب على الخوف من الفشل"
+    },
+    {
+      "domainId": "selfdev",
+      "domainName": "تنمية الذات والمهارات",
+      "guideTitle": "تحسين مهارة التواصل مع الآخرين"
+    },
+    {
+      "domainId": "selfdev",
+      "domainName": "تنمية الذات والمهارات",
+      "guideTitle": "قراءة أكثر رغم ضيق الوقت"
+    },
+    {
+      "domainId": "selfdev",
+      "domainName": "تنمية الذات والمهارات",
+      "guideTitle": "تحديد أهداف واقعية وقابلة للتحقيق فعليًا"
+    },
+    {
+      "domainId": "selfdev",
+      "domainName": "تنمية الذات والمهارات",
+      "guideTitle": "إدارة الوقت اليومي بفعالية أكبر"
+    },
+    {
+      "domainId": "elderly",
+      "domainName": "كبار السن",
+      "guideTitle": "مساعدة أحد الوالدين على استخدام الهاتف الذكي بثقة"
+    },
+    {
+      "domainId": "elderly",
+      "domainName": "كبار السن",
+      "guideTitle": "الوقاية من السقوط في المنزل لكبار السن"
+    },
+    {
+      "domainId": "elderly",
+      "domainName": "كبار السن",
+      "guideTitle": "متابعة الأدوية المتعددة بتنظيم"
+    },
+    {
+      "domainId": "elderly",
+      "domainName": "كبار السن",
+      "guideTitle": "التعامل مع شعور العزلة لدى كبار السن"
+    },
+    {
+      "domainId": "elderly",
+      "domainName": "كبار السن",
+      "guideTitle": "تجهيز المنزل ليكون أكثر أمانًا لكبير السن"
+    },
+    {
+      "domainId": "elderly",
+      "domainName": "كبار السن",
+      "guideTitle": "تشجيع كبار السن على نشاط بدني خفيف يومي"
+    },
+    {
+      "domainId": "elderly",
+      "domainName": "كبار السن",
+      "guideTitle": "تسهيل التواصل بين كبار السن وأحفادهم"
+    },
+    {
+      "domainId": "nutrition",
+      "domainName": "التغذية والطهي",
+      "guideTitle": "وجبة متوازنة سريعة بمكونات بسيطة"
+    },
+    {
+      "domainId": "nutrition",
+      "domainName": "التغذية والطهي",
+      "guideTitle": "حفظ بقايا الطعام بأمان ومنع تلفها"
+    },
+    {
+      "domainId": "nutrition",
+      "domainName": "التغذية والطهي",
+      "guideTitle": "تخطيط وجبات الأسبوع لتوفير الوقت والمال"
+    },
+    {
+      "domainId": "nutrition",
+      "domainName": "التغذية والطهي",
+      "guideTitle": "بدائل صحية للسكر والملح الزائد"
+    },
+    {
+      "domainId": "nutrition",
+      "domainName": "التغذية والطهي",
+      "guideTitle": "التعامل مع حساسية أو تحسس غذائي لدى أحد أفراد الأسرة"
+    },
+    {
+      "domainId": "nutrition",
+      "domainName": "التغذية والطهي",
+      "guideTitle": "تحضير وجبات خفيفة صحية للعمل أو المدرسة"
+    },
+    {
+      "domainId": "nutrition",
+      "domainName": "التغذية والطهي",
+      "guideTitle": "قراءة الملصقات الغذائية بذكاء عند الشراء"
+    },
+    {
+      "domainId": "fitness",
+      "domainName": "اللياقة البدنية",
+      "guideTitle": "بدء الرياضة من الصفر دون إصابة"
+    },
+    {
+      "domainId": "fitness",
+      "domainName": "اللياقة البدنية",
+      "guideTitle": "إيجاد وقت للرياضة رغم الانشغال الشديد"
+    },
+    {
+      "domainId": "fitness",
+      "domainName": "اللياقة البدنية",
+      "guideTitle": "التعافي من ألم عضلي بعد التمرين"
+    },
+    {
+      "domainId": "fitness",
+      "domainName": "اللياقة البدنية",
+      "guideTitle": "اختيار نوع رياضة مناسب لهدفك"
+    },
+    {
+      "domainId": "fitness",
+      "domainName": "اللياقة البدنية",
+      "guideTitle": "الحفاظ على الحافز لممارسة الرياضة باستمرار"
+    },
+    {
+      "domainId": "fitness",
+      "domainName": "اللياقة البدنية",
+      "guideTitle": "دمج النشاط البدني في يوم عمل مزدحم"
+    },
+    {
+      "domainId": "fitness",
+      "domainName": "اللياقة البدنية",
+      "guideTitle": "تمارين بسيطة يمكن ممارستها في المنزل بدون معدات"
+    },
+    {
+      "domainId": "business",
+      "domainName": "الأعمال والمشاريع الصغيرة",
+      "guideTitle": "الخطوات الأولى قبل بدء مشروع صغير"
+    },
+    {
+      "domainId": "business",
+      "domainName": "الأعمال والمشاريع الصغيرة",
+      "guideTitle": "التسعير الصحيح لمنتج أو خدمة صغيرة"
+    },
+    {
+      "domainId": "business",
+      "domainName": "الأعمال والمشاريع الصغيرة",
+      "guideTitle": "الفصل بين حساب المشروع والحساب الشخصي"
+    },
+    {
+      "domainId": "business",
+      "domainName": "الأعمال والمشاريع الصغيرة",
+      "guideTitle": "التعامل مع عميل متأخر في الدفع"
+    },
+    {
+      "domainId": "business",
+      "domainName": "الأعمال والمشاريع الصغيرة",
+      "guideTitle": "الترويج لمشروع صغير بميزانية محدودة"
+    },
+    {
+      "domainId": "business",
+      "domainName": "الأعمال والمشاريع الصغيرة",
+      "guideTitle": "إدارة الوقت بين مشروعك الجانبي وعملك الأساسي"
+    },
+    {
+      "domainId": "business",
+      "domainName": "الأعمال والمشاريع الصغيرة",
+      "guideTitle": "التعامل مع فترات ركود المبيعات"
+    },
+    {
+      "domainId": "freelance",
+      "domainName": "التجارة الإلكترونية والعمل الحر",
+      "guideTitle": "بدء أول مشروع عمل حر (Freelance) بثقة"
+    },
+    {
+      "domainId": "freelance",
+      "domainName": "التجارة الإلكترونية والعمل الحر",
+      "guideTitle": "تجنّب مشاكل الدفع والتحويلات في العمل عن بعد"
+    },
+    {
+      "domainId": "freelance",
+      "domainName": "التجارة الإلكترونية والعمل الحر",
+      "guideTitle": "بناء ملف أعمال (بورتفوليو) بدون خبرة سابقة"
+    },
+    {
+      "domainId": "freelance",
+      "domainName": "التجارة الإلكترونية والعمل الحر",
+      "guideTitle": "التعامل مع عميل صعب في العمل الحر"
+    },
+    {
+      "domainId": "freelance",
+      "domainName": "التجارة الإلكترونية والعمل الحر",
+      "guideTitle": "اختيار منصة العمل الحر المناسبة"
+    },
+    {
+      "domainId": "freelance",
+      "domainName": "التجارة الإلكترونية والعمل الحر",
+      "guideTitle": "إدارة الوقت بين عدة عملاء في نفس الوقت"
+    },
+    {
+      "domainId": "freelance",
+      "domainName": "التجارة الإلكترونية والعمل الحر",
+      "guideTitle": "كتابة عرض عمل (Proposal) يقنع العميل"
+    },
+    {
+      "domainId": "digitalsafety",
+      "domainName": "الأمن الرقمي والخصوصية",
+      "guideTitle": "التعرف على رسائل ومكالمات الاحتيال الإلكتروني"
+    },
+    {
+      "domainId": "digitalsafety",
+      "domainName": "الأمن الرقمي والخصوصية",
+      "guideTitle": "إنشاء كلمة سر قوية وسهلة التذكر"
+    },
+    {
+      "domainId": "digitalsafety",
+      "domainName": "الأمن الرقمي والخصوصية",
+      "guideTitle": "الاستخدام الآمن لأدوات الذكاء الاصطناعي"
+    },
+    {
+      "domainId": "digitalsafety",
+      "domainName": "الأمن الرقمي والخصوصية",
+      "guideTitle": "حماية خصوصيتك على مواقع التواصل الاجتماعي"
+    },
+    {
+      "domainId": "digitalsafety",
+      "domainName": "الأمن الرقمي والخصوصية",
+      "guideTitle": "تأمين شبكة الواي فاي المنزلية"
+    },
+    {
+      "domainId": "digitalsafety",
+      "domainName": "الأمن الرقمي والخصوصية",
+      "guideTitle": "شك في اختراق حساب"
+    },
+    {
+      "domainId": "digitalsafety",
+      "domainName": "الأمن الرقمي والخصوصية",
+      "guideTitle": "التعرف على تطبيقات أو مواقع مزيفة قبل التعامل معها"
+    },
+    {
+      "domainId": "pets",
+      "domainName": "الحيوانات الأليفة",
+      "guideTitle": "استقبال جرو أو قطة صغيرة لأول مرة في المنزل"
+    },
+    {
+      "domainId": "pets",
+      "domainName": "الحيوانات الأليفة",
+      "guideTitle": "تدريب الكلب على الحاجة في مكان محدد"
+    },
+    {
+      "domainId": "pets",
+      "domainName": "الحيوانات الأليفة",
+      "guideTitle": "التعرف على علامات مرض الحيوان الأليف ومتى تراجع بيطريًا"
+    },
+    {
+      "domainId": "pets",
+      "domainName": "الحيوانات الأليفة",
+      "guideTitle": "التعامل مع قلق الانفصال لدى الكلب عند الخروج من المنزل"
+    },
+    {
+      "domainId": "pets",
+      "domainName": "الحيوانات الأليفة",
+      "guideTitle": "اختيار الطعام المناسب لعمر وحجم الحيوان الأليف"
+    },
+    {
+      "domainId": "pets",
+      "domainName": "الحيوانات الأليفة",
+      "guideTitle": "الاستعداد لسفر أو انتقال مع حيوان أليف"
+    },
+    {
+      "domainId": "pets",
+      "domainName": "الحيوانات الأليفة",
+      "guideTitle": "تعليم القطة استخدام صندوق الرمل"
+    },
+    {
+      "domainId": "legalrights",
+      "domainName": "الحقوق اليومية والقانون البسيط",
+      "guideTitle": "معرفة حقوقك الأساسية كمستأجر قبل توقيع عقد سكن"
+    },
+    {
+      "domainId": "legalrights",
+      "domainName": "الحقوق اليومية والقانون البسيط",
+      "guideTitle": "التصرف عند نزاع مالي بسيط مع صاحب عمل"
+    },
+    {
+      "domainId": "legalrights",
+      "domainName": "الحقوق اليومية والقانون البسيط",
+      "guideTitle": "فهم أساسيات فاتورة أو عقد شراء قبل التوقيع"
+    },
+    {
+      "domainId": "legalrights",
+      "domainName": "الحقوق اليومية والقانون البسيط",
+      "guideTitle": "متى تحتاج فعليًا لاستشارة محامٍ بدل حل الأمر بنفسك"
+    },
+    {
+      "domainId": "legalrights",
+      "domainName": "الحقوق اليومية والقانون البسيط",
+      "guideTitle": "معرفة حقوقك الأساسية كموظف عند توقيع عقد عمل"
+    },
+    {
+      "domainId": "legalrights",
+      "domainName": "الحقوق اليومية والقانون البسيط",
+      "guideTitle": "التصرف الصحيح عند تلقي غرامة أو مخالفة مرورية"
+    },
+    {
+      "domainId": "legalrights",
+      "domainName": "الحقوق اليومية والقانون البسيط",
+      "guideTitle": "حماية نفسك من عقود أو اشتراكات خادعة"
+    },
+    {
+      "domainId": "gardening",
+      "domainName": "الزراعة المنزلية والنباتات",
+      "guideTitle": "أسباب اصفرار أوراق النبات المنزلي"
+    },
+    {
+      "domainId": "gardening",
+      "domainName": "الزراعة المنزلية والنباتات",
+      "guideTitle": "جدول ري صحيح للنباتات المنزلية الشائعة"
+    },
+    {
+      "domainId": "gardening",
+      "domainName": "الزراعة المنزلية والنباتات",
+      "guideTitle": "التخلص من الحشرات الصغيرة في التربة أو على الأوراق"
+    },
+    {
+      "domainId": "gardening",
+      "domainName": "الزراعة المنزلية والنباتات",
+      "guideTitle": "البدء بحديقة خضار صغيرة في المنزل أو الشرفة"
+    },
+    {
+      "domainId": "gardening",
+      "domainName": "الزراعة المنزلية والنباتات",
+      "guideTitle": "زراعة الأعشاب المنزلية (نعناع، ريحان) بسهولة"
+    },
+    {
+      "domainId": "gardening",
+      "domainName": "الزراعة المنزلية والنباتات",
+      "guideTitle": "اختيار الأصيص والتربة المناسبة لكل نبات"
+    },
+    {
+      "domainId": "gardening",
+      "domainName": "الزراعة المنزلية والنباتات",
+      "guideTitle": "تسميد النباتات المنزلية بطريقة صحيحة"
+    },
+    {
+      "domainId": "utilities",
+      "domainName": "ترشيد الفواتير والطاقة",
+      "guideTitle": "خفض فاتورة الكهرباء دون التأثير على راحة الأسرة"
+    },
+    {
+      "domainId": "utilities",
+      "domainName": "ترشيد الفواتير والطاقة",
+      "guideTitle": "ترشيد استهلاك الماء المنزلي اليومي"
+    },
+    {
+      "domainId": "utilities",
+      "domainName": "ترشيد الفواتير والطاقة",
+      "guideTitle": "فهم وقراءة فاتورة الكهرباء أو الماء بشكل صحيح"
+    },
+    {
+      "domainId": "utilities",
+      "domainName": "ترشيد الفواتير والطاقة",
+      "guideTitle": "التصرف عند ارتفاع مفاجئ وغير مبرر في الفاتورة"
+    },
+    {
+      "domainId": "utilities",
+      "domainName": "ترشيد الفواتير والطاقة",
+      "guideTitle": "تقليل استهلاك الغاز المنزلي بعادات بسيطة"
+    },
+    {
+      "domainId": "utilities",
+      "domainName": "ترشيد الفواتير والطاقة",
+      "guideTitle": "صيانة سخان الماء لإطالة عمره وخفض الاستهلاك"
+    },
+    {
+      "domainId": "utilities",
+      "domainName": "ترشيد الفواتير والطاقة",
+      "guideTitle": "استخدام الأجهزة الكهربائية الكبرى بكفاءة أكبر"
+    }
+  ]
+}

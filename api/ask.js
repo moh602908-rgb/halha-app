@@ -28,11 +28,11 @@
 
 export const config = { runtime: "edge" };
 
-import { CONFIG, resolvePlan } from "../lib/config.js";
-import { resolveAndCall } from "../lib/providerManager.js";
-import { checkAndPrepareUsage, checkGlobalDailyCap, incrementGlobalDailyUsage } from "../lib/ratelimit.js";
-import { buildSystemPrompt, sanitizeHistory, sanitizeGuides } from "../lib/prompt.js";
-import { recordEvent } from "../lib/monitor.js";
+import { CONFIG, resolvePlan } from "./_lib/config.js";
+import { resolveAndCall } from "./_lib/providerManager.js";
+import { checkAndPrepareUsage, checkGlobalDailyCap, incrementGlobalDailyUsage } from "./_lib/ratelimit.js";
+import { buildSystemPrompt, sanitizeHistory, sanitizeGuides } from "./_lib/prompt.js";
+import { recordEvent } from "./_lib/monitor.js";
 
 function jsonResponse(obj, status, extraHeaders) {
   return new Response(JSON.stringify(obj), {

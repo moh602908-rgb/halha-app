@@ -33,6 +33,7 @@ import { resolveAndCall } from "./_lib/providerManager.js";
 import { checkAndPrepareUsage, checkGlobalDailyCap, incrementGlobalDailyUsage } from "./_lib/ratelimit.js";
 import { buildSystemPrompt, sanitizeHistory, sanitizeGuides } from "./_lib/prompt.js";
 import { recordEvent } from "./_lib/monitor.js";
+import { classifyIntent } from "./_lib/intent.js";
 
 function jsonResponse(obj, status, extraHeaders) {
   return new Response(JSON.stringify(obj), {
@@ -123,6 +124,21 @@ export default async function handler(req) {
   const question = String(body?.question || "").trim().slice(0, CONFIG.MAX_QUESTION_LENGTH);
   if (!question) {
     return jsonResponse({ error: "empty_question" }, 400);
+  }
+
+  // Phase 12.3 — طبقة تصنيف النوايا المحلية (Intent Layer).
+  // معطّلة افتراضيًا (CONFIG.ENABLE_INTENT_LAYER = false)؛ عند التعطيل
+  // هذه الكتلة لا تُنفَّذ إطلاقًا والمسار يطابق الوضع السابق حرفيًا.
+  // الاستثناء الوحيد الذي يُغيّر المسار هو "injection_attempt" — بقية
+  // الفئات الست تُحسَب داخل classifyIntent وتُهمَل هنا بالكامل (Phase
+  // 12.3 الأولى: "Intent يوجّه ولا يحكم"). لا يُمرَّر نص السؤال لأي
+  // مكان غير classifyIntent نفسها، ولا يُسجَّل أي محتوى في recordEvent.
+  if (CONFIG.ENABLE_INTENT_LAYER) {
+    const intent = classifyIntent(question);
+    if (intent === "injection_attempt") {
+      recordEvent("intent_injection_block");
+      return jsonResponse({ error: "request_rejected" }, 400);
+    }
   }
 
   // المرحلة 3: فحص السقف العام التقديري أولاً (Best-effort، راجع

@@ -27,7 +27,8 @@ const ALLOWED_EVENTS = Object.freeze([
   "quota_limit",
   "origin_block",
   "provider_error",
-  "validation_error"
+  "validation_error",
+  "intent_injection_block"
 ]);
 
 function todayKeyUTC() {
@@ -43,7 +44,8 @@ function getMonitorState() {
         quota_limit: 0,
         origin_block: 0,
         provider_error: 0,
-        validation_error: 0
+        validation_error: 0,
+        intent_injection_block: 0
       }
     };
   }
@@ -56,7 +58,8 @@ function getMonitorState() {
       quota_limit: 0,
       origin_block: 0,
       provider_error: 0,
-      validation_error: 0
+      validation_error: 0,
+      intent_injection_block: 0
     };
   }
   return state;

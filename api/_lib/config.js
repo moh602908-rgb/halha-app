@@ -8,6 +8,12 @@ function envStr(name, fallback) {
   return (typeof v === "string" && v.trim()) ? v.trim() : fallback;
 }
 
+function envBool(name, fallback) {
+  const v = process.env[name];
+  if (typeof v !== "string") return fallback;
+  return v.trim().toLowerCase() === "true";
+}
+
 export const CONFIG = {
   FREE_DAILY_LIMIT: envInt("FREE_DAILY_LIMIT", 10),
   PREMIUM_DAILY_LIMIT: envInt("PREMIUM_DAILY_LIMIT", 50),
@@ -36,7 +42,11 @@ export const CONFIG = {
   GLOBAL_DAILY_SOFT_CAP: envInt("GLOBAL_DAILY_SOFT_CAP", 500),
 
   RATE_LIMIT_COOKIE_NAME: "dallini_usage",
-  SECONDS_PER_DAY: 86400
+  SECONDS_PER_DAY: 86400,
+
+  // Phase 12.3 — طبقة تصنيف النوايا المحلية. معطّلة افتراضيًا (Fail-safe)
+  // عند غياب المتغير من إعدادات Vercel.
+  ENABLE_INTENT_LAYER: envBool("ENABLE_INTENT_LAYER", false)
 };
 
 export function resolvePlan() {

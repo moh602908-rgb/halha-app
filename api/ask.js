@@ -70,6 +70,7 @@ function logSecurityEvent(kind, req) {
 
 export default async function handler(req) {
   if (req.method !== "POST") {
+    recordEvent("method_not_allowed");
     return jsonResponse({ error: "method_not_allowed" }, 405);
   }
   if (!checkSameOrigin(req)) {
@@ -81,6 +82,7 @@ export default async function handler(req) {
   // Defense in depth: تحقق من Content-Type قبل محاولة القراءة كـ JSON.
   const contentType = req.headers.get("content-type") || "";
   if (!contentType.includes("application/json")) {
+    recordEvent("unsupported_content_type");
     return jsonResponse({ error: "unsupported_content_type" }, 415);
   }
 
@@ -104,6 +106,7 @@ export default async function handler(req) {
   try {
     rawText = await req.text();
   } catch {
+    recordEvent("bad_request");
     return jsonResponse({ error: "bad_request" }, 400);
   }
   // تحقق ثانٍ من الحجم الفعلي (Content-Length قد يكون غائبًا أو غير دقيق مع
@@ -118,11 +121,13 @@ export default async function handler(req) {
   try {
     body = JSON.parse(rawText);
   } catch {
+    recordEvent("bad_request");
     return jsonResponse({ error: "bad_request" }, 400);
   }
 
   const question = String(body?.question || "").trim().slice(0, CONFIG.MAX_QUESTION_LENGTH);
   if (!question) {
+    recordEvent("empty_question");
     return jsonResponse({ error: "empty_question" }, 400);
   }
 

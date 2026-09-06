@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>دخول المالك — دلّني AI</title>
+  <link rel="icon" href="./icon-192.png" />
+  <link rel="stylesheet" href="./assets/owner-dashboard.css" />
+</head>
+<body class="owner-body owner-body--center">
+
+  <main class="login-card" role="main">
+    <div class="login-card__brand">
+      <img src="./icon-192.png" alt="" class="login-card__logo" width="56" height="56" />
+      <h1 class="login-card__title">لوحة تحكم المالك</h1>
+      <p class="login-card__subtitle">دلّني AI</p>
+    </div>
+
+    <form id="owner-login-form" class="login-form" autocomplete="off" novalidate>
+      <label for="owner-key" class="login-form__label">مفتاح الدخول</label>
+      <input
+        id="owner-key"
+        name="owner-key"
+        type="password"
+        class="login-form__input"
+        placeholder="أدخل مفتاح الدخول"
+        autocomplete="off"
+        required
+      />
+
+      <p id="owner-login-error" class="login-form__error" role="alert" hidden>
+        مفتاح الدخول غير صحيح.
+      </p>
+
+      <button type="submit" id="owner-login-submit" class="login-form__submit">
+        دخول
+      </button>
+    </form>
+
+    <p class="login-card__note">
+      يُحفظ الدخول مؤقتًا لهذه الجلسة فقط، ويُمسح تلقائيًا عند إغلاق المتصفح.
+    </p>
+  </main>
+
+  <script src="./assets/owner-dashboard.js"></script>
+</body>
+</html>

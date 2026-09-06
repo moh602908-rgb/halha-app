@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>لوحة المالك — دلّني AI</title>
+  <link rel="icon" href="./icon-192.png" />
+  <link rel="stylesheet" href="./assets/owner-dashboard.css" />
+</head>
+<body class="owner-body">
+
+  <header class="owner-header">
+    <div class="owner-header__brand">
+      <img src="./icon-192.png" alt="" class="owner-header__logo" width="32" height="32" />
+      <span class="owner-header__title">لوحة تحكم المالك</span>
+    </div>
+    <button type="button" id="owner-logout-btn" class="owner-header__logout">
+      تسجيل خروج
+    </button>
+  </header>
+
+  <main id="owner-dashboard-grid" class="owner-grid">
+
+    <section class="owner-card" data-endpoint="/api/owner-status" data-title="حالة النظام">
+      <div class="owner-card__head">
+        <h2 class="owner-card__title">حالة النظام</h2>
+        <span class="owner-card__status owner-card__status--neutral" data-status-pill>—</span>
+      </div>
+      <div class="owner-card__body" data-card-body>
+        <p class="owner-card__loading">جارِ التحميل…</p>
+      </div>
+    </section>
+
+    <section class="owner-card" data-endpoint="/api/owner-ai-status" data-title="حالة الذكاء الاصطناعي">
+      <div class="owner-card__head">
+        <h2 class="owner-card__title">حالة الذكاء الاصطناعي</h2>
+        <span class="owner-card__status owner-card__status--neutral" data-status-pill>—</span>
+      </div>
+      <div class="owner-card__body" data-card-body>
+        <p class="owner-card__loading">جارِ التحميل…</p>
+      </div>
+    </section>
+
+    <section class="owner-card" data-endpoint="/api/owner-usage" data-title="أرقام الاستخدام">
+      <div class="owner-card__head">
+        <h2 class="owner-card__title">أرقام الاستخدام</h2>
+        <span class="owner-card__status owner-card__status--neutral" data-status-pill>—</span>
+      </div>
+      <div class="owner-card__body" data-card-body>
+        <p class="owner-card__loading">جارِ التحميل…</p>
+      </div>
+    </section>
+
+    <section class="owner-card" data-endpoint="/api/owner-security" data-title="التنبيهات">
+      <div class="owner-card__head">
+        <h2 class="owner-card__title">التنبيهات</h2>
+        <span class="owner-card__status owner-card__status--neutral" data-status-pill>—</span>
+      </div>
+      <div class="owner-card__body" data-card-body>
+        <p class="owner-card__loading">جارِ التحميل…</p>
+      </div>
+    </section>
+
+    <section class="owner-card" data-endpoint="/api/owner-protection" data-title="معلومات الحماية">
+      <div class="owner-card__head">
+        <h2 class="owner-card__title">معلومات الحماية</h2>
+        <span class="owner-card__status owner-card__status--neutral" data-status-pill>—</span>
+      </div>
+      <div class="owner-card__body" data-card-body>
+        <p class="owner-card__loading">جارِ التحميل…</p>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="./assets/owner-dashboard.js"></script>
+</body>
+</html>

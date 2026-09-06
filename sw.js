@@ -3,7 +3,7 @@
    وإلا فلن يكتشف المتصفح وجود نسخة جديدة، وستبقى النسخة القديمة معروضة
    للمستخدمين رغم نجاح الرفع على GitHub وVercel. */
 
-const APP_VERSION = "v2.2.0";
+const APP_VERSION = "v2.2.1";
 const CACHE_NAME = `dallini-cache-${APP_VERSION}`;
 
 const FILES_TO_CACHE = [
@@ -70,6 +70,13 @@ self.addEventListener("fetch", (event) => {
 
   // تجاهل أي طلب ليس GET (POST/PUT/...) تمامًا؛ لا تخزين ولا اعتراض.
   if (req.method !== "GET") return;
+
+  // استثناء مسارات لوحة المالك: تمرير مباشر للشبكة دون أي مرور بالـ Cache،
+  // لمنع تخزين بيانات Owner Dashboard (حالة النظام، الاستخدام، التنبيهات...).
+  if (new URL(req.url).pathname.startsWith("/api/owner-")) {
+    event.respondWith(fetch(req, { cache: "no-store" }));
+    return;
+  }
 
   event.respondWith(
     fetch(req, { cache: "no-store" })

@@ -1,0 +1,319 @@
+/* ============================================================
+   owner-dashboard.css — التنسيق الخاص بلوحة تحكم المالك
+   دلّني AI — الإصدار الأول (v1)، تصميم بسيط وهادئ
+   ============================================================ */
+
+:root {
+  --owner-primary: #4F6EF7;
+  --owner-primary-dark: #3B4FD9;
+  --owner-accent: #8B5CF6;
+  --owner-bg: #F5F6FA;
+  --owner-surface: #FFFFFF;
+  --owner-border: #E3E5EE;
+  --owner-text: #1E2233;
+  --owner-text-muted: #6B7280;
+  --owner-success: #16A34A;
+  --owner-success-bg: #EAFBF1;
+  --owner-warning: #D97706;
+  --owner-warning-bg: #FEF6E7;
+  --owner-danger: #DC2626;
+  --owner-danger-bg: #FDECEC;
+  --owner-neutral-bg: #F0F1F6;
+  --owner-radius: 14px;
+  --owner-radius-sm: 8px;
+  --owner-shadow: 0 1px 2px rgba(30, 34, 51, 0.06), 0 4px 14px rgba(30, 34, 51, 0.05);
+  --owner-font: "Segoe UI", Tahoma, "Geeza Pro", Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+.owner-body {
+  min-height: 100vh;
+  background: var(--owner-bg);
+  font-family: var(--owner-font);
+  color: var(--owner-text);
+  direction: rtl;
+}
+
+.owner-body--center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+/* -------------------- صفحة الدخول -------------------- */
+
+.login-card {
+  width: 100%;
+  max-width: 360px;
+  background: var(--owner-surface);
+  border: 1px solid var(--owner-border);
+  border-radius: var(--owner-radius);
+  box-shadow: var(--owner-shadow);
+  padding: 32px 28px;
+}
+
+.login-card__brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.login-card__logo {
+  border-radius: 12px;
+  margin-bottom: 12px;
+}
+
+.login-card__title {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0;
+  color: var(--owner-text);
+}
+
+.login-card__subtitle {
+  font-size: 13px;
+  color: var(--owner-text-muted);
+  margin: 4px 0 0;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.login-form__label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--owner-text);
+}
+
+.login-form__input {
+  font-family: inherit;
+  font-size: 15px;
+  padding: 10px 12px;
+  border: 1px solid var(--owner-border);
+  border-radius: var(--owner-radius-sm);
+  background: var(--owner-bg);
+  color: var(--owner-text);
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.login-form__input:focus {
+  border-color: var(--owner-primary);
+}
+
+.login-form__error {
+  font-size: 13px;
+  color: var(--owner-danger);
+  background: var(--owner-danger-bg);
+  border-radius: var(--owner-radius-sm);
+  padding: 8px 10px;
+  margin: 4px 0 0;
+}
+
+.login-form__submit {
+  margin-top: 8px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(135deg, var(--owner-primary), var(--owner-accent));
+  border: none;
+  border-radius: var(--owner-radius-sm);
+  padding: 11px 12px;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.login-form__submit:hover {
+  opacity: 0.92;
+}
+
+.login-form__submit:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.login-card__note {
+  font-size: 12px;
+  color: var(--owner-text-muted);
+  text-align: center;
+  margin: 20px 0 0;
+  line-height: 1.6;
+}
+
+/* -------------------- صفحة اللوحة الرئيسية -------------------- */
+
+.owner-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  background: var(--owner-surface);
+  border-bottom: 1px solid var(--owner-border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.owner-header__brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.owner-header__logo {
+  border-radius: 8px;
+}
+
+.owner-header__title {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.owner-header__logout {
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--owner-text-muted);
+  background: var(--owner-neutral-bg);
+  border: 1px solid var(--owner-border);
+  border-radius: var(--owner-radius-sm);
+  padding: 7px 14px;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.owner-header__logout:hover {
+  color: var(--owner-danger);
+  border-color: var(--owner-danger);
+}
+
+.owner-grid {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 20px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 720px) {
+  .owner-grid {
+    grid-template-columns: 1fr;
+    padding: 14px;
+  }
+}
+
+.owner-card {
+  background: var(--owner-surface);
+  border: 1px solid var(--owner-border);
+  border-radius: var(--owner-radius);
+  box-shadow: var(--owner-shadow);
+  padding: 16px 18px;
+  min-height: 120px;
+}
+
+.owner-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.owner-card__title {
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0;
+  color: var(--owner-text);
+}
+
+.owner-card__status {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--owner-neutral-bg);
+  color: var(--owner-text-muted);
+}
+
+.owner-card__status--ok {
+  background: var(--owner-success-bg);
+  color: var(--owner-success);
+}
+
+.owner-card__status--warn {
+  background: var(--owner-warning-bg);
+  color: var(--owner-warning);
+}
+
+.owner-card__status--error {
+  background: var(--owner-danger-bg);
+  color: var(--owner-danger);
+}
+
+.owner-card__status--neutral {
+  background: var(--owner-neutral-bg);
+  color: var(--owner-text-muted);
+}
+
+.owner-card__loading {
+  font-size: 13px;
+  color: var(--owner-text-muted);
+  margin: 0;
+}
+
+.owner-card__error {
+  font-size: 13px;
+  color: var(--owner-danger);
+  margin: 0;
+}
+
+.owner-kv {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.owner-kv__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 13px;
+  padding: 4px 0;
+  border-bottom: 1px dashed var(--owner-border);
+}
+
+.owner-kv__row:last-child {
+  border-bottom: none;
+}
+
+.owner-kv__key {
+  color: var(--owner-text-muted);
+  white-space: nowrap;
+}
+
+.owner-kv__value {
+  color: var(--owner-text);
+  font-weight: 600;
+  text-align: left;
+  direction: ltr;
+  word-break: break-word;
+}

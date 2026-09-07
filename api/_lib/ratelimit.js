@@ -18,17 +18,15 @@
       منفصلة)، يُستخدم لمنع إرسال طلبين متتاليين خلال فاصل زمني قصير
       جداً (Throttling) — راجع MIN_REQUEST_INTERVAL_MS في config.js.
 
-   2) العدّاد العام (globalDailyCheck): طبقة دفاع إضافية "Best-effort"
-      فقط، مخزّنة في متغيّر ذاكرة عادي (globalThis) — وليست بديلاً عن
-      حماية مركزية حقيقية. حدودها المعروفة والمقصودة:
-        - غير موزّعة: كل نسخة من الخادم (Vercel Edge instance) لها
-          عدّادها الخاص المنفصل، فالسقف الفعلي قد يتضاعف بعدد النسخ
-          النشطة في نفس اليوم.
-        - غير دائمة: تُصفَّر تلقائياً عند إعادة تشغيل أي نسخة (Cold
-          Start)، وليس فقط عند تغيّر التاريخ.
-      دراسة حماية مركزية حقيقية (تخزين خارجي مشترك) مسجّلة كمرحلة
-      مستقبلية منفصلة، تحتاج قراراً صريحاً بخصوص إدخال تبعية خارجية.
+   2) العدّاد العام (globalDailyCheck): محسوب الآن عبر Upstash Redis
+      (راجع api/_lib/redisStore.js)، بدل الاعتماد على globalThis —
+      هذا يجعله عدّادًا موزّعًا حقيقيًا مشتركًا بين كل نسخ Vercel
+      Edge بدل عدّاد منفصل لكل نسخة. سياسة الفشل: Fail-open — أي
+      تعذّر في الوصول إلى Redis لا يوقف المستخدم ولا يعطّل ask.js؛
+      يُهمَل الفحص/التسجيل لتلك الدورة فقط (راجع redisStore.js).
    ============================================================ */
+
+import { redisIncrWithExpire, redisGetInt } from "./redisStore.js";
 
 function toBase64Url(bytes) {
   let str = "";
@@ -124,37 +122,41 @@ export async function checkAndPrepareUsage(req, { cookieName, secret, dailyLimit
 }
 
 /* ============================================================
-   المرحلة 3 — العدّاد العام (Best-effort، راجع التوثيق أعلى الملف)
+   المرحلة 3 (محدَّثة) — العدّاد العام عبر Upstash Redis
+   ============================================================
+   العدّاد العام لم يعد مخزَّنًا في globalThis (راجع التوثيق أعلى
+   الملف) بل في Upstash Redis عبر api/_lib/redisStore.js، تحت
+   المفتاح dallini:usage:global:{YYYY-MM-DD} مع INCR وTTL محدود
+   (90 يومًا) لتفادي تراكم البيانات بلا حدّ.
    ============================================================ */
 
-function getGlobalUsageState() {
-  if (!globalThis.__dallini_global_usage) {
-    globalThis.__dallini_global_usage = { date: todayKeyUTC(), count: 0 };
-  }
-  const state = globalThis.__dallini_global_usage;
-  const today = todayKeyUTC();
-  if (state.date !== today) {
-    state.date = today;
-    state.count = 0;
-  }
-  return state;
-}
+const GLOBAL_USAGE_TTL_SECONDS = 60 * 60 * 24 * 90; // 90 يومًا
 
 /**
  * فحص فقط (بدون زيادة) — يُستدعى قبل معالجة الطلب لمعرفة هل تجاوزنا
  * السقف العام التقديري أم لا.
+ *
+ * Fail-open: عند تعذّر الوصول إلى Redis (currentCount === null من
+ * redisGetInt)، نعيد withinCap: true دائمًا — أي أن هذا السقف
+ * التقديري يتوقف عمليًا أثناء انقطاع Upstash، بينما تبقى الحدود
+ * الفردية عبر الكوكي الموقّعة تعمل بشكل مستقل تمامًا وغير متأثرة.
  */
-export function checkGlobalDailyCap(softCap) {
-  const state = getGlobalUsageState();
-  return { withinCap: state.count < softCap, currentCount: state.count };
+export async function checkGlobalDailyCap(softCap) {
+  const key = `dallini:usage:global:${todayKeyUTC()}`;
+  const currentCount = await redisGetInt(key);
+  if (currentCount === null) {
+    return { withinCap: true, currentCount: 0 };
+  }
+  return { withinCap: currentCount < softCap, currentCount };
 }
 
 /**
  * زيادة العدّاد العام — تُستدعى فقط بعد نجاح استدعاء الذكاء الاصطناعي
  * فعلياً، بنفس فلسفة عدم احتساب المحاولات الفاشلة المعتمدة في هذا
- * الملف بالكامل.
+ * الملف بالكامل. فشل الكتابة في Redis صامت بالكامل (Fail-open، راجع
+ * redisStore.js) ولا يُرمى كاستثناء هنا.
  */
-export function incrementGlobalDailyUsage() {
-  const state = getGlobalUsageState();
-  state.count += 1;
+export async function incrementGlobalDailyUsage() {
+  const key = `dallini:usage:global:${todayKeyUTC()}`;
+  await redisIncrWithExpire(key, GLOBAL_USAGE_TTL_SECONDS);
 }

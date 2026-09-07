@@ -1,40 +1,46 @@
 /* ============================================================
-   lib/monitor.js — المراقبة الأساسية للمالك (الإصدار الثاني —
-   Owner Dashboard الخطوة 2)
+   lib/monitor.js — المراقبة الأساسية للمالك (الإصدار الثالث —
+   نقل العدّاد اليومي إلى Upstash Redis)
    ============================================================
    الهدف: "عين بسيطة" على حالة النظام — عدّادات مجمّعة فقط، بدون أي
    محتوى أو معلومة يمكن ربطها بمستخدم معيّن.
 
-   قيود التصميم (صارمة ومقصودة، لم تتغيّر عن الإصدار الأول):
+   قيود التصميم (صارمة ومقصودة، لم تتغيّر عن الإصدارات السابقة):
    1) recordEvent() تقبل معاملًا واحدًا فقط من قائمة مغلقة (Enum) —
       لا يوجد أي حقل حرّ (req, details, metadata...) يمكن أن يحمل
       بيانات شخصية عبره، حتى بالخطأ من تعديل مستقبلي.
    2) Fail-silent كامل: أي خطأ داخلي يُلتقط ولا يُعاد رميه أبدًا،
-      فلا يمكن لهذا الملف أن يُسقط أو يُبطئ طلب المستخدم الأصلي.
-   3) بدون await وبدون أي I/O: عمليات في الذاكرة فقط، تنفيذ متزامن.
-   4) نفس نمط التخزين المعتمد أصلًا في lib/ratelimit.js
-      (globalThis)، غير موزّع وغير دائم — مقبول هنا لأن الهدف مؤشر
-      تقريبي وليس سجلًا دائمًا.
+      فلا يمكن لهذا الملف أن يُسقط طلب المستخدم الأصلي.
+   3) العدّاد اليومي التفصيلي أصبح غير متزامن (async/await)، لأنه
+      يُخزَّن الآن في Upstash Redis عبر api/_lib/redisStore.js بدل
+      globalThis — هذا يُلغي القيد التوثيقي القديم الذي كان يصف
+      recordEvent() كدالة متزامنة بلا I/O؛ ذلك القيد لم يعد ساريًا.
+      الفشل يبقى صامتًا بالكامل بفضل سياسة Fail-open في redisStore.js
+      (خطأ Redis لا يُرمى كاستثناء هنا ولا يوقف الطلب الأصلي أبدًا).
+   4) نافذة كشف الإغراق الدوّارة تبقى بلا أي تغيير على globalThis
+      (غير موزّعة وغير دائمة) — مقبول لأن الهدف مؤشر تقريبي سريع
+      وليس سجلًا دائمًا، ولأن نطاق هذه المرحلة هو العدّاد اليومي فقط.
 
-   إضافات هذا الإصدار (Owner Dashboard):
-   - 6 أنواع أحداث جديدة (سدّ فجوة تسجيل + حدثا اللوحة/الإغراق).
-     العدّاد اليومي لكل الأحداث (القديمة والجديدة) يعمل دائمًا بلا أي
-     استثناء أو تعليق — سلوك العدّاد اليومي الحالي لم يتغيّر إطلاقًا.
-   - نافذة زمنية دوّارة منفصلة (10 دقائق / 5 حاويات × دقيقتان،
-     القيم من CONFIG) تُستخدم حصريًا لكشف إغراق الأحداث المرفوضة —
-     لا علاقة لها بالعدّاد اليومي أعلاه ولا تُبدّله.
-   - عند تجاوز REJECT_FLOOD_THRESHOLD ضمن النافذة: تتوقف زيادة
-     الحاوية التفصيلية لبقية نوبة الإغراق، ويُسجَّل
-     reject_flood_detected في العدّاد اليومي مرة واحدة فقط عند لحظة
-     تجاوز العتبة (لا يتكرر طوال استمرار النوبة).
-   - لا يزال هذا الملف لا يستورد req أو أي بيانات من العميل — فقط
-     CONFIG (أرقام إعداد بحتة، لا صلة لها بأي مستخدم فردي).
+   التغيير الجوهري في هذا الإصدار (إضافة إلى نقل التخزين لـ Redis):
+   أثناء نوبة إغراق نشطة (floodActive === true)، تتوقف الكتابة
+   التفصيلية لعدّاد Redis اليومي لبقية الأحداث المرفوضة، تمامًا كما
+   كانت تتوقف زيادة حاوية النافذة التفصيلية سابقًا — لتفادي إرسال
+   استدعاء شبكي إلى Upstash عن كل طلب مرفوض في ذروة الهجوم، وهو
+   بالضبط أسوأ توقيت لاستهلاك حصة الأوامر المجانية وزيادة زمن
+   الاستجابة تحت الضغط. يُسجَّل reject_flood_detected في Redis مرة
+   واحدة فقط عند لحظة تجاوز العتبة (لا يتكرر طوال استمرار النوبة)،
+   بنفس المنطق المعتمد أصلًا.
 
-   لا توجد نقطة عرض (API) لهذه البيانات بعد — تُضاف في خطوة منفصلة
-   لاحقة (Owner Dashboard endpoint)، هذا الملف معزول تمامًا عنها.
+   getSnapshot() أصبحت أيضًا async وتقرأ العدّاد اليومي من Redis
+   مباشرة (HGETALL)، بدل globalThis، ليبقى مصدر البيانات موحّدًا
+   وصحيحًا لأي استخدام مستقبلي (Owner Dashboard). لا تزال غير
+   مُستدعاة من أي نقطة API في هذا الإصدار.
    ============================================================ */
 
 import { CONFIG } from "./config.js";
+import { redisHIncrByWithExpire, redisHGetAll } from "./redisStore.js";
+
+const MONITOR_TTL_SECONDS = 60 * 60 * 24 * 90; // 90 يومًا — نفس سياسة الاحتفاظ المعتمدة للعدّاد اليومي
 
 // قائمة الأحداث المسموحة حصرًا — أي قيمة خارج هذه القائمة تُتجاهل بصمت.
 const ALLOWED_EVENTS = Object.freeze([
@@ -74,25 +80,6 @@ function todayKeyUTC() {
   return new Date().toISOString().slice(0, 10); // YYYY-MM-DD
 }
 
-function emptyCounts() {
-  const counts = {};
-  for (const name of ALLOWED_EVENTS) counts[name] = 0;
-  return counts;
-}
-
-function getMonitorState() {
-  if (!globalThis.__dallini_monitor) {
-    globalThis.__dallini_monitor = { date: todayKeyUTC(), counts: emptyCounts() };
-  }
-  const state = globalThis.__dallini_monitor;
-  const today = todayKeyUTC();
-  if (state.date !== today) {
-    state.date = today;
-    state.counts = emptyCounts();
-  }
-  return state;
-}
-
 function getWindowBucketMs() {
   const minutes = Number.isFinite(CONFIG.MONITOR_WINDOW_MINUTES) && CONFIG.MONITOR_WINDOW_MINUTES > 0
     ? CONFIG.MONITOR_WINDOW_MINUTES
@@ -125,7 +112,13 @@ function sumValidBuckets(win, currentSlot) {
   return total;
 }
 
-function recordWindowedRejection() {
+/**
+ * يُحدِّث نافذة كشف الإغراق الدوّارة (globalThis، بلا تغيير)، ويكتب
+ * reject_flood_detected في Redis مرة واحدة فقط عند لحظة تجاوز العتبة.
+ * يُرجع "not_flooded" إن لم تُكتشف نوبة إغراق عند هذا الاستدعاء، حتى
+ * يعرف recordEvent() هل يكتب العدّاد التفصيلي لهذا الحدث أم لا.
+ */
+async function recordWindowedRejection(key) {
   const bucketMs = getWindowBucketMs();
   const now = Date.now();
   const slot = Math.floor(now / bucketMs);
@@ -148,35 +141,47 @@ function recordWindowedRejection() {
     if (!win.floodActive) {
       win.floodActive = true;
       // نسجّل الحدث المجمّع مرة واحدة فقط، عند لحظة تجاوز العتبة تحديدًا.
-      const state = getMonitorState();
-      state.counts.reject_flood_detected += 1;
+      await redisHIncrByWithExpire(key, "reject_flood_detected", 1, MONITOR_TTL_SECONDS);
     }
     // لا نزيد عدّاد الحاوية التفصيلي طوال استمرار نوبة الإغراق — هذا
     // بالضبط ما يمنع تضخّم الأرقام التفصيلية بلا حد أعلى.
-    return;
+    return "flooded";
   }
 
   win.floodActive = false; // إعادة تسليح الكشف لنوبة إغراق مستقبلية محتملة
   bucket.count += 1;
+  return "not_flooded";
 }
 
 /**
  * تسجيل وقوع حدث تقني — لا يقبل ولا يُخزّن أي شيء غير نوع الحدث نفسه.
- * لا ترمي أي استثناء أبدًا؛ فشلها الداخلي لا يؤثر على الطلب الأصلي.
+ * لا ترمي أي استثناء أبدًا؛ فشلها الداخلي (بما فيه فشل الاتصال بـ
+ * Redis عبر سياسة Fail-open في redisStore.js) لا يؤثر على الطلب
+ * الأصلي مطلقًا.
  *
- * العدّاد اليومي يعمل دائمًا لكل الأحداث بلا استثناء (سلوك غير متغيّر).
- * الأحداث الواردة في REJECTION_EVENTS_FOR_FLOOD تُغذّي أيضًا النافذة
- * الدوّارة لغرض كشف الإغراق فقط — طبقة منفصلة تمامًا عن العدّاد اليومي.
+ * العدّاد اليومي (Redis) يعمل لكل الأحداث بلا استثناء، ما عدا أثناء
+ * نوبة إغراق نشطة: عندها تتوقف الكتابة التفصيلية للأحداث الواردة في
+ * REJECTION_EVENTS_FOR_FLOOD تحديدًا (راجع توثيق أعلى الملف)، ويبقى
+ * reject_flood_detected هو المؤشر المجمّع الوحيد لتلك الفترة.
  */
-export function recordEvent(eventType) {
+export async function recordEvent(eventType) {
   try {
     if (!ALLOWED_EVENTS.includes(eventType)) return; // تجاهل صامت لأي قيمة غير معروفة
 
-    const state = getMonitorState();
-    state.counts[eventType] += 1;
+    const key = `dallini:monitor:${todayKeyUTC()}`;
 
     if (REJECTION_EVENTS_FOR_FLOOD.includes(eventType)) {
-      recordWindowedRejection();
+      const win = getWindowState();
+      if (win.floodActive) {
+        // نوبة إغراق نشطة بالفعل: لا كتابة تفصيلية إضافية — فقط تحديث
+        // النافذة الدوّارة (لن تكتب Redis مجددًا لأن floodActive already true).
+        await recordWindowedRejection(key);
+        return;
+      }
+      await redisHIncrByWithExpire(key, eventType, 1, MONITOR_TTL_SECONDS);
+      await recordWindowedRejection(key);
+    } else {
+      await redisHIncrByWithExpire(key, eventType, 1, MONITOR_TTL_SECONDS);
     }
   } catch {
     /* لا نكسر الطلب أبدًا بسبب فشل في المراقبة */
@@ -184,19 +189,24 @@ export function recordEvent(eventType) {
 }
 
 /**
- * قراءة لقطة من الحالة الحالية (العدّاد اليومي + ملخّص النافذة
- * الدوّارة) — للاستخدام الداخلي المستقبلي فقط (نقطة Owner Dashboard).
- * غير مُستدعاة من أي نقطة API في هذا الإصدار.
+ * قراءة لقطة من الحالة الحالية (العدّاد اليومي من Redis + ملخّص
+ * النافذة الدوّارة من الذاكرة) — للاستخدام الداخلي المستقبلي فقط
+ * (نقطة Owner Dashboard). غير مُستدعاة من أي نقطة API في هذا الإصدار.
+ *
+ * ملاحظة Fail-open: إن تعذّر الوصول إلى Redis تُعاد counts كقاموس
+ * فارغ {} بدل رمي استثناء، اتساقًا مع سياسة الفشل الصامت في بقية
+ * هذا الملف وفي redisStore.js.
  */
-export function getSnapshot() {
+export async function getSnapshot() {
   try {
-    const state = getMonitorState();
     const win = getWindowState();
     const bucketMs = getWindowBucketMs();
     const currentSlot = Math.floor(Date.now() / bucketMs);
+    const key = `dallini:monitor:${todayKeyUTC()}`;
+    const counts = (await redisHGetAll(key)) || {};
     return {
-      date: state.date,
-      counts: { ...state.counts },
+      date: todayKeyUTC(),
+      counts,
       window: {
         minutes: CONFIG.MONITOR_WINDOW_MINUTES,
         rejectedInWindow: sumValidBuckets(win, currentSlot),

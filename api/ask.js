@@ -24,6 +24,12 @@
       الذكاء الاصطناعي، بدون أي قاعدة بيانات خارجية.
    3) هذه الدالة تعمل فقط عند الاتصال بها من نفس نطاق الموقع (فحص
       Origin)، فلا يمكن لموقع آخر استخدام مفتاحك لتشغيل تطبيقه هو.
+
+   تحديث نقل العدّادات إلى Upstash Redis: checkGlobalDailyCap و
+   incrementGlobalDailyUsage (من ratelimit.js) وrecordEvent (من
+   monitor.js) أصبحت جميعها async (تتصل بـ Redis عبر redisStore.js)
+   بدل globalThis — لذلك أُضيف await على كل استدعاء لها في هذا الملف.
+   لا تغيير آخر على تدفق أو منطق هذا الملف.
    ============================================================ */
 
 export const config = { runtime: "edge" };
@@ -70,19 +76,19 @@ function logSecurityEvent(kind, req) {
 
 export default async function handler(req) {
   if (req.method !== "POST") {
-    recordEvent("method_not_allowed");
+    await recordEvent("method_not_allowed");
     return jsonResponse({ error: "method_not_allowed" }, 405);
   }
   if (!checkSameOrigin(req)) {
     logSecurityEvent("forbidden_origin", req);
-    recordEvent("origin_block");
+    await recordEvent("origin_block");
     return jsonResponse({ error: "forbidden_origin" }, 403);
   }
 
   // Defense in depth: تحقق من Content-Type قبل محاولة القراءة كـ JSON.
   const contentType = req.headers.get("content-type") || "";
   if (!contentType.includes("application/json")) {
-    recordEvent("unsupported_content_type");
+    await recordEvent("unsupported_content_type");
     return jsonResponse({ error: "unsupported_content_type" }, 415);
   }
 
@@ -91,7 +97,7 @@ export default async function handler(req) {
   const contentLength = parseInt(req.headers.get("content-length") || "0", 10);
   if (contentLength > CONFIG.MAX_BODY_BYTES) {
     logSecurityEvent("payload_too_large", req);
-    recordEvent("validation_error");
+    await recordEvent("validation_error");
     return jsonResponse({ error: "payload_too_large" }, 413);
   }
 
@@ -106,14 +112,14 @@ export default async function handler(req) {
   try {
     rawText = await req.text();
   } catch {
-    recordEvent("bad_request");
+    await recordEvent("bad_request");
     return jsonResponse({ error: "bad_request" }, 400);
   }
   // تحقق ثانٍ من الحجم الفعلي (Content-Length قد يكون غائبًا أو غير دقيق مع
   // بعض العملاء)، بعد القراءة مباشرة وقبل أي معالجة أخرى.
   if (rawText.length > CONFIG.MAX_BODY_BYTES) {
     logSecurityEvent("payload_too_large_actual", req);
-    recordEvent("validation_error");
+    await recordEvent("validation_error");
     return jsonResponse({ error: "payload_too_large" }, 413);
   }
 
@@ -121,13 +127,13 @@ export default async function handler(req) {
   try {
     body = JSON.parse(rawText);
   } catch {
-    recordEvent("bad_request");
+    await recordEvent("bad_request");
     return jsonResponse({ error: "bad_request" }, 400);
   }
 
   const question = String(body?.question || "").trim().slice(0, CONFIG.MAX_QUESTION_LENGTH);
   if (!question) {
-    recordEvent("empty_question");
+    await recordEvent("empty_question");
     return jsonResponse({ error: "empty_question" }, 400);
   }
 
@@ -141,17 +147,17 @@ export default async function handler(req) {
   if (CONFIG.ENABLE_INTENT_LAYER) {
     const intent = classifyIntent(question);
     if (intent === "injection_attempt") {
-      recordEvent("intent_injection_block");
+      await recordEvent("intent_injection_block");
       return jsonResponse({ error: "request_rejected" }, 400);
     }
   }
 
-  // المرحلة 3: فحص السقف العام التقديري أولاً (Best-effort، راجع
-  // lib/ratelimit.js) — لا يستهلك شيئاً بحد ذاته، فحص فقط.
-  const globalCheck = checkGlobalDailyCap(CONFIG.GLOBAL_DAILY_SOFT_CAP);
+  // المرحلة 3: فحص السقف العام التقديري أولاً (Best-effort عبر Redis،
+  // راجع lib/ratelimit.js) — لا يستهلك شيئاً بحد ذاته، فحص فقط.
+  const globalCheck = await checkGlobalDailyCap(CONFIG.GLOBAL_DAILY_SOFT_CAP);
   if (!globalCheck.withinCap) {
     logSecurityEvent("global_cap_reached", req);
-    recordEvent("quota_limit");
+    await recordEvent("quota_limit");
     return jsonResponse({ error: "service_busy" }, 429);
   }
 
@@ -170,13 +176,13 @@ export default async function handler(req) {
     // المرحلة 3: رفض بسبب سرعة الإرسال فقط — لا يُحتسب من الرصيد اليومي،
     // ورسالة مختلفة عمداً عن limit_reached حتى لا يظن المستخدم أن حصته
     // اليومية انتهت.
-    recordEvent("too_fast");
+    await recordEvent("too_fast");
     return jsonResponse({ error: "too_fast", retryAfterMs: usage.retryAfterMs }, 429);
   }
 
   if (!usage.allowed) {
     logSecurityEvent("limit_reached", req);
-    recordEvent("quota_limit");
+    await recordEvent("quota_limit");
     return jsonResponse({
       error: "limit_reached",
       remaining: 0,
@@ -207,13 +213,13 @@ export default async function handler(req) {
       time: new Date().toISOString(),
       detail: String(e && e.message ? e.message : e).slice(0, 300)
     });
-    recordEvent("provider_error");
+    await recordEvent("provider_error");
     return jsonResponse({ error: "ai_error" }, 502);
   }
 
   // المرحلة 3: نزيد العدّاد العام فقط بعد نجاح فعلي، بنفس منطق usage.commit()
   // أعلاه — طلب فشل لا يُحتسب من أي عدّاد (فردي أو عام).
-  incrementGlobalDailyUsage();
+  await incrementGlobalDailyUsage();
 
   const { cookieHeader, remaining } = await usage.commit();
 

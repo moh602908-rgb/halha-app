@@ -11,6 +11,11 @@
    واحد)، ويتم هذا التجميع هنا فقط، وليس في monitor.js نفسه.
 
    GET فقط، محمي بحارس المصادقة المشترك في api/_lib/ownerAuth.js.
+
+   تحديث — إصلاح ما بعد نقل العدّادات إلى Upstash Redis:
+   getSnapshot() أصبحت async، فأُضيف await أمام استدعائها. لا تغيير
+   آخر — نفس الحقول الثمانية، نفس منطق التجميع في sumValidationErrors.
+   Redis يبقى مصدر الحقيقة كما هو مصمَّم.
    ============================================================ */
 
 export const config = { runtime: "edge" };
@@ -40,7 +45,7 @@ export default async function handler(req) {
   const rejection = await guardOwnerRequest(req);
   if (rejection) return rejection;
 
-  const snapshot = getSnapshot();
+  const snapshot = await getSnapshot();
   const counts = snapshot && snapshot.counts ? snapshot.counts : null;
   const floodActive = snapshot && snapshot.window ? snapshot.window.floodActive === true : false;
 

@@ -27,6 +27,13 @@
    المقصود المترتب على هذا النقل: حارس محاولات المصادقة أصبح مشتركًا
    بين كل نقاط المالك (موثَّق بالتفصيل في ownerAuth.js نفسه) — لا تغيير
    آخر في شكل الاستجابة أو منطق البيانات المُرجعة من هذا الملف.
+
+   ------------------------------------------------------------
+   تحديث — إصلاح ما بعد نقل العدّادات إلى Upstash Redis:
+   ------------------------------------------------------------
+   getSnapshot() وcheckGlobalDailyCap() أصبحتا async، فأُضيف await
+   أمام استدعائهما. لا تغيير آخر في هذا الملف — نفس الحقول، نفس
+   البنية، نفس منطق الحساب. Redis يبقى مصدر الحقيقة كما هو مصمَّم.
    ============================================================ */
 
 export const config = { runtime: "edge" };
@@ -40,8 +47,8 @@ export default async function handler(req) {
   const rejection = await guardOwnerRequest(req);
   if (rejection) return rejection;
 
-  const snapshot = getSnapshot();
-  const globalUsage = checkGlobalDailyCap(CONFIG.GLOBAL_DAILY_SOFT_CAP);
+  const snapshot = await getSnapshot();
+  const globalUsage = await checkGlobalDailyCap(CONFIG.GLOBAL_DAILY_SOFT_CAP);
 
   return jsonResponse({
     date: snapshot ? snapshot.date : null,

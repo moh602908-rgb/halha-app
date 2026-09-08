@@ -10,6 +10,13 @@
    ratelimit.js أو config.js.
 
    GET فقط، محمي بحارس المصادقة المشترك في api/_lib/ownerAuth.js.
+
+   تحديث — إصلاح ما بعد نقل العدّادات إلى Upstash Redis:
+   getSnapshot() وcheckGlobalDailyCap() أصبحتا async (تتصلان بـ Redis
+   عبر redisStore.js)، فأُضيف await أمام استدعائهما هنا. لا تغيير في
+   منطق الحماية أو الحسابات أو مصدر البيانات — Redis يبقى مصدر
+   الحقيقة كما هو مصمَّم. التعديل الوحيد الإضافي: تقريب النسبة المئوية
+   لرقم صحيح بدل رقم عشري بمنزلة واحدة، لعرض أوضح في لوحة المالك.
    ============================================================ */
 
 export const config = { runtime: "edge" };
@@ -26,15 +33,15 @@ function safeUsagePercentage(count, limit) {
   if (!Number.isFinite(limit) || limit <= 0) return 0;
   if (!Number.isFinite(count) || count < 0) return 0;
   const pct = (count / limit) * 100;
-  return Math.round(pct * 10) / 10; // رقم عشري بمنزلة واحدة، بلا تعقيد إضافي
+  return Math.round(pct); // رقم صحيح للعرض في لوحة المالك — بلا دقة عشرية غير مفيدة
 }
 
 export default async function handler(req) {
   const rejection = await guardOwnerRequest(req);
   if (rejection) return rejection;
 
-  const snapshot = getSnapshot();
-  const globalUsage = checkGlobalDailyCap(CONFIG.GLOBAL_DAILY_SOFT_CAP);
+  const snapshot = await getSnapshot();
+  const globalUsage = await checkGlobalDailyCap(CONFIG.GLOBAL_DAILY_SOFT_CAP);
   const dailyQuotaLimit = CONFIG.GLOBAL_DAILY_SOFT_CAP;
 
   return jsonResponse({

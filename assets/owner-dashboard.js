@@ -19,6 +19,122 @@
   var VERIFY_ENDPOINT = "/api/owner-status";
 
   // ------------------------------------------------------------
+  // تعريب طبقة العرض فقط — لا علاقة لهذا القسم بالمصادقة أو الشبكة
+  // ------------------------------------------------------------
+
+  var ARABIC_LABELS = {
+    date: "التاريخ",
+    last_updated: "آخر تحديث",
+
+    "config.enableIntentLayer": "طبقة تحليل النية مفعّلة",
+    "config.activeProvider": "مزود الذكاء الاصطناعي الحالي",
+    "config.defaultModel": "النموذج الافتراضي",
+    "usage.dailyGlobalCount": "عدد الطلبات اليوم",
+    "usage.dailyGlobalCap": "السقف اليومي المسموح",
+    "usage.withinCap": "ضمن السقف المسموح",
+    "window.minutes": "مدة نافذة المراقبة (دقائق)",
+    "window.rejectedInWindow": "المرفوض خلال النافذة الحالية",
+    "window.floodActive": "حالة الإغراق نشطة الآن",
+    "events.too_fast": "طلبات سريعة جدًا",
+    "events.quota_limit": "تجاوز السقف اليومي",
+    "events.origin_block": "حظر مصدر غير موثوق",
+    "events.validation_error": "خطأ تحقق من المدخلات",
+    "events.method_not_allowed": "طريقة طلب غير مسموحة",
+    "events.unsupported_content_type": "نوع محتوى غير مدعوم",
+    "events.bad_request": "طلب غير صالح",
+    "events.empty_question": "سؤال فارغ",
+    "events.intent_injection_block": "محاولة حقن تعليمات",
+    "events.owner_auth_failed": "فشل دخول لوحة المالك",
+    "events.reject_flood_detected": "نشاط غير طبيعي (إغراق)",
+    "events.provider_error": "خطأ من مزود الذكاء الاصطناعي",
+
+    provider_name: "اسم مزود الذكاء الاصطناعي",
+    model_name: "اسم النموذج",
+    provider_error_count_today: "أخطاء المزوّد اليوم",
+
+    requests_today: "عدد الطلبات اليوم",
+    daily_quota_limit: "السقف اليومي",
+    quota_usage_percentage: "نسبة استهلاك السقف (%)",
+    quota_limit_hits_today: "مرات بلوغ السقف اليوم",
+
+    origin_block_count: "محاولات من مصدر غير موثوق",
+    validation_error_count: "أخطاء تحقق من المدخلات",
+    intent_injection_block_count: "محاولات حقن تعليمات",
+    quota_limit_count: "مرات بلوغ السقف اليومي",
+    provider_error_count: "أخطاء مزود الذكاء الاصطناعي",
+    owner_auth_failed_count: "محاولات دخول فاشلة للوحة المالك",
+    global_flood_detected: "نشاط غير طبيعي حاليًا",
+
+    protection_scope: "نطاق الحماية",
+    base_protection_enabled: "الحماية الأساسية مفعّلة",
+    auto_block_enabled: "الحظر التلقائي مفعّل",
+    calm_mode_enabled: "وضع الهدوء مفعّل",
+    strict_mode_enabled: "الوضع الصارم مفعّل",
+
+    activity_00_06_today: "نشاط الأسئلة (00:00 - 06:00)",
+    activity_06_12_today: "نشاط الأسئلة (06:00 - 12:00)",
+    activity_12_18_today: "نشاط الأسئلة (12:00 - 18:00)",
+    activity_18_24_today: "نشاط الأسئلة (18:00 - 24:00)",
+    activity_night_today: "نشاط الليل (00-06 و18-24)",
+    activity_day_today: "نشاط النهار (06-12 و12-18)",
+    ai_requests_today: "طلبات الذكاء الاصطناعي (اليوم)",
+    ai_requests_week: "طلبات الذكاء الاصطناعي (أسبوعيًا)",
+    ai_requests_month: "طلبات الذكاء الاصطناعي (شهريًا)",
+    app_activity_today: "نشاط التطبيق (اليوم)",
+    app_activity_week: "نشاط التطبيق (أسبوعيًا)",
+    app_activity_month: "نشاط التطبيق (شهريًا)",
+    rejected_or_failed_week: "طلبات مرفوضة أو فاشلة (أسبوعيًا)",
+    rejected_or_failed_month: "طلبات مرفوضة أو فاشلة (شهريًا)",
+    provider_errors_today: "أخطاء مزود الذكاء الاصطناعي (اليوم)",
+    provider_errors_week: "أخطاء مزود الذكاء الاصطناعي (أسبوعيًا)",
+    provider_errors_month: "أخطاء مزود الذكاء الاصطناعي (شهريًا)",
+    injection_attempts_today: "محاولات حقن تعليمات (اليوم)",
+    injection_attempts_week: "محاولات حقن تعليمات (أسبوعيًا)",
+    injection_attempts_month: "محاولات حقن تعليمات (شهريًا)",
+    protection_bypass_today: "محاولات تجاوز الحماية (اليوم)",
+    protection_bypass_week: "محاولات تجاوز الحماية (أسبوعيًا)",
+    protection_bypass_month: "محاولات تجاوز الحماية (شهريًا)",
+    abnormal_requests_today: "طلبات غير طبيعية (اليوم)",
+    abnormal_requests_week: "طلبات غير طبيعية (أسبوعيًا)",
+    abnormal_requests_month: "طلبات غير طبيعية (شهريًا)",
+    owner_login_failed_today: "محاولات دخول لوحة المالك الفاشلة (اليوم)",
+    owner_login_failed_week: "محاولات دخول لوحة المالك الفاشلة (أسبوعيًا)",
+    owner_login_failed_month: "محاولات دخول لوحة المالك الفاشلة (شهريًا)"
+  };
+
+  // ترجمة قيم نصية معروفة (وليس أسماء الحقول) — القيم غير المدرَجة
+  // هنا (كأسماء المزوّدين والنماذج) تبقى كما هي بصفتها أسماء منتج.
+  var ARABIC_VALUE_LABELS = {
+    "system-wide": "على مستوى النظام"
+  };
+
+  // يحوّل "2026-09-09T14:03:00.000Z" إلى "2026-09-09 14:03" — بلا
+  // الاعتماد على أي تنسيق محلي (Intl) تفاديًا لأي تغيير غير متوقع
+  // في نظام الأرقام؛ الأرقام تبقى 0-9 دائمًا بهذه الطريقة.
+  function formatIfIsoDateTime(value) {
+    if (typeof value !== "string") return null;
+    if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(value)) return null;
+    return value.replace("T", " ").slice(0, 16);
+  }
+
+  // يسطّح كائنًا متداخلًا إلى مفاتيح بصيغة "أب.ابن" لعرضها كصفوف
+  // مفهومة بدل JSON خام — لا يغيّر أي قيمة، فقط شكل العرض.
+  function flattenForDisplay(obj, prefix) {
+    var out = {};
+    Object.keys(obj || {}).forEach(function (key) {
+      var value = obj[key];
+      var flatKey = prefix ? prefix + "." + key : key;
+      if (value !== null && typeof value === "object" && !Array.isArray(value)) {
+        var nested = flattenForDisplay(value, flatKey);
+        Object.keys(nested).forEach(function (nk) { out[nk] = nested[nk]; });
+      } else {
+        out[flatKey] = value;
+      }
+    });
+    return out;
+  }
+
+  // ------------------------------------------------------------
   // أدوات مشتركة
   // ------------------------------------------------------------
 
@@ -83,12 +199,19 @@
   // ------------------------------------------------------------
 
   function formatKeyLabel(key) {
-    return String(key).replace(/_/g, " ");
+    if (Object.prototype.hasOwnProperty.call(ARABIC_LABELS, key)) return ARABIC_LABELS[key];
+    // لا نعرض أي مفتاح تقني إنجليزي مهما كان — تسمية آمنة عامة بدلاً منه.
+    return "حقل غير معروف";
   }
 
   function formatValue(value) {
     if (value === null || value === undefined) return "—";
     if (typeof value === "boolean") return value ? "نعم" : "لا";
+    var isoFormatted = formatIfIsoDateTime(value);
+    if (isoFormatted !== null) return isoFormatted;
+    if (typeof value === "string" && Object.prototype.hasOwnProperty.call(ARABIC_VALUE_LABELS, value)) {
+      return ARABIC_VALUE_LABELS[value];
+    }
     if (typeof value === "object") {
       try {
         return JSON.stringify(value);
@@ -103,7 +226,8 @@
     var list = document.createElement("ul");
     list.className = "owner-kv";
 
-    var keys = Object.keys(obj || {});
+    var flat = flattenForDisplay(obj, "");
+    var keys = Object.keys(flat);
     if (keys.length === 0) {
       var empty = document.createElement("p");
       empty.className = "owner-card__loading";
@@ -121,7 +245,7 @@
 
       var v = document.createElement("span");
       v.className = "owner-kv__value";
-      v.textContent = formatValue(obj[key]);
+      v.textContent = formatValue(flat[key]);
 
       row.appendChild(k);
       row.appendChild(v);

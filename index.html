@@ -104,5 +104,15 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
+<script>
+/* نبضة "نشاط تطبيق" واحدة عند كل تحميل حقيقي للصفحة — مستقلة تمامًا
+   عن app.js وask.js ونظام الأسئلة. POST بلا Body، بلا انتظار رد،
+   وفشلها صامت بالكامل (fail-open) — لا تؤثر أبدًا على عمل الصفحة.
+   نفس النقطة (api/track-activity) سيستدعيها Android لاحقًا عند
+   فتح/استخدام حقيقي، دون أي تعديل هنا أو في لوحة المالك. */
+window.addEventListener('load', () => {
+  fetch('/api/track-activity', { method: 'POST', keepalive: true }).catch(() => {});
+});
+</script>
 </body>
 </html>

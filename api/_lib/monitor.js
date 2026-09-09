@@ -80,6 +80,12 @@ function todayKeyUTC() {
   return new Date().toISOString().slice(0, 10); // YYYY-MM-DD
 }
 
+// دالة نقية فقط لبناء اسم مفتاح يوم معيّن — إضافة توثيقية بحتة، بلا
+// أي تغيير على recordEvent أو ALLOWED_EVENTS أو أي منطق آخر هنا.
+export function monitorKeyForDate(dateStr) {
+  return `dallini:monitor:${dateStr}`;
+}
+
 function getWindowBucketMs() {
   const minutes = Number.isFinite(CONFIG.MONITOR_WINDOW_MINUTES) && CONFIG.MONITOR_WINDOW_MINUTES > 0
     ? CONFIG.MONITOR_WINDOW_MINUTES

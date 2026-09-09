@@ -60,3 +60,15 @@ export async function redisHGetAll(key) {
   const result = await callUpstash([["HGETALL", key]]);
   return result ? (result?.[0]?.result ?? null) : null;
 }
+
+/* ============================================================
+   إضافة مستقلة — قراءة مجمّعة لعدّة مفاتيح في نداء HTTP واحد
+   ============================================================
+   لا تعديل على أي من الدوال أعلاه ولا على callUpstash نفسها ولا
+   إعادة ترتيب لأي كود موجود. الهدف الوحيد: تمكين owner-insights.js
+   من تجميع عشرات الأوامر في نداء Upstash واحد فقط عند فتح لوحة
+   المالك حصرًا. نفس سياسة Fail-open: null عند فشل الاتصال.
+   ============================================================ */
+export async function redisPipeline(commands) {
+  return callUpstash(commands);
+}

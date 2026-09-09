@@ -132,6 +132,28 @@ export async function checkAndPrepareUsage(req, { cookieName, secret, dailyLimit
 
 const GLOBAL_USAGE_TTL_SECONDS = 60 * 60 * 24 * 90; // 90 يومًا
 
+/* ============================================================
+   إضافة — فترات نشاط اليوم (00-06/06-12/12-18/18-24) للبطاقة
+   الجديدة "رؤية المالك: النشاط والأمان" فقط.
+   ============================================================
+   الكتابة الجديدة الوحيدة المبرَّرة معماريًا في كل تصميم "رؤية
+   المالك" — كل ما هو أسبوعي/شهري/أمني/نشاط عام يُقرأ من مفاتيح
+   موجودة أصلًا (owner-insights.js) بلا أي كتابة إضافية. لا تخزين
+   لأي معرّف فردي؛ عدّاد مجمّع بالكامل بنفس فلسفة العدّاد اليومي
+   أعلاه. الفترات تُحسب كأرباع لليوم الحالي بتوقيت UTC.
+   ============================================================ */
+const PERIOD_USAGE_TTL_SECONDS = 60 * 60 * 24 * 2; // يومان يكفيان لعرض اليوم الحالي
+
+function currentPeriodIndexUTC() {
+  return Math.floor(new Date().getUTCHours() / 6); // 0..3 لكل ربع من 6 ساعات
+}
+
+// أربعة مفاتيح فترات اليوم الحالي: 00-06 / 06-12 / 12-18 / 18-24
+export function periodKeysForTodayUTC() {
+  const date = todayKeyUTC();
+  return [0, 1, 2, 3].map(i => `dallini:usage:period:${date}:${i}`);
+}
+
 /**
  * فحص فقط (بدون زيادة) — يُستدعى قبل معالجة الطلب لمعرفة هل تجاوزنا
  * السقف العام التقديري أم لا.
@@ -158,5 +180,9 @@ export async function checkGlobalDailyCap(softCap) {
  */
 export async function incrementGlobalDailyUsage() {
   const key = `dallini:usage:global:${todayKeyUTC()}`;
-  await redisIncrWithExpire(key, GLOBAL_USAGE_TTL_SECONDS);
+  const periodKey = periodKeysForTodayUTC()[currentPeriodIndexUTC()];
+  await Promise.all([
+    redisIncrWithExpire(key, GLOBAL_USAGE_TTL_SECONDS),
+    redisIncrWithExpire(periodKey, PERIOD_USAGE_TTL_SECONDS)
+  ]);
 }

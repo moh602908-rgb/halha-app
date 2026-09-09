@@ -9,14 +9,19 @@
    الوحيد: فترات اليوم الأربع، تُكتب فعليًا في ratelimit.js (موثَّق
    هناك) لأنها الشيء الوحيد غير القابل للاشتقاق لاحقًا.
 
-   نشاط التطبيق (app_activity_*):
-   لا توجد اليوم أي إشارة "فتح تطبيق" منفصلة عن "سؤال" — التطبيق لا
-   يفعل شيئًا آخر بعد. لذلك يُشتق app_activity_* حاليًا من نفس مصدر
-   ai_requests_* (نفس القيمة تمامًا، بقرار معماري صريح، لا كتابة
-   Redis إضافية). عند توفر إشارة نشاط عامة مستقلة لاحقًا (خصوصًا مع
-   Android)، نقطة التوسعة الوحيدة هي هذا الملف: إضافة مصدر ثانٍ إلى
-   دالة computeAppActivity أدناه وجمعه — بلا أي تعديل على بنية
-   اللوحة أو الملفات الأخرى.
+   نشاط التطبيق (app_activity_*) — مُحدَّث:
+   لم يعد مشتقًا من ai_requests. مصدر مستقل تمامًا الآن: مفتاح
+   dallini:activity:global:{date}، يُزاد عبر api/track-activity.js
+   (نقطة نهاية عامة منفصلة، بلا صلة بـ ask.js). في نسخة الويب
+   الحالية يُستدعى عند تحميل الصفحة؛ لاحقًا Android يستدعي نفس
+   النقطة عند فتح/استخدام حقيقي — بلا أي تعديل على هذا الملف أو
+   بنية لوحة المالك عند إضافة ذلك المصدر.
+
+   ملاحظة مؤجَّلة (قرار صريح، ليست خطأ): فترات اليوم الأربع
+   (activity_00_06_today وأخواتها، وكذلك activity_day/night) تبقى
+   كما هي — توزيع لـ ai_requests حسب الفترة، وليس توزيعًا لنشاط
+   التطبيق الجديد. هذا لا يغيّر صحة البيانات، فقط وضوح التسمية،
+   وتقرر تأجيله لدفعة لاحقة بعد استقرار مصدر app_activity الجديد.
 
    المقياس المعروض هو "طلبات/نشاط" حصرًا وليس "عدد مستخدمين" — لا
    توجد وسيلة لعدّ مستخدمين فريدين دون معرّف، وهذا مرفوض صراحةً.
@@ -58,6 +63,11 @@ function usageKeyForDate(dateStr) {
   return `dallini:usage:global:${dateStr}`;
 }
 
+// مصدر app_activity المستقل الجديد — يُزاد فقط من api/track-activity.js.
+function activityKeyForDate(dateStr) {
+  return `dallini:activity:global:${dateStr}`;
+}
+
 function sumHashField(hashResults, field) {
   let total = 0;
   for (const item of hashResults) {
@@ -85,12 +95,6 @@ function sumGetResults(getResults) {
   return total;
 }
 
-// نقطة التوسعة الوحيدة لنشاط التطبيق العام مستقبلاً (مثال: Android):
-// حاليًا مصدر واحد فقط (نفس أرقام الأسئلة)، لأن لا إشارة أخرى متاحة.
-function computeAppActivity(aiRequestsValue) {
-  return aiRequestsValue; // TODO مستقبلاً: + مصدر Android عند توفره
-}
-
 function buildEmptyResponse() {
   return {
     activity_00_06_today: 0, activity_06_12_today: 0, activity_12_18_today: 0, activity_18_24_today: 0,
@@ -115,12 +119,14 @@ export default async function handler(req) {
   const periodKeys = periodKeysForTodayUTC();
   const monitorKeys = dateKeys.map(monitorKeyForDate);
   const usageKeys = dateKeys.map(usageKeyForDate);
+  const activityKeys = dateKeys.map(activityKeyForDate);
 
-  // نداء Upstash واحد فقط يضم كل الأوامر معًا (4 + 30 + 30 = 64 أمرًا).
+  // نداء Upstash واحد فقط يضم كل الأوامر معًا (4 + 30 + 30 + 30 = 94 أمرًا).
   const commands = [
     ...periodKeys.map(k => ["GET", k]),
     ...usageKeys.map(k => ["GET", k]),
-    ...monitorKeys.map(k => ["HGETALL", k])
+    ...monitorKeys.map(k => ["HGETALL", k]),
+    ...activityKeys.map(k => ["GET", k])
   ];
 
   const result = await redisPipeline(commands);
@@ -128,11 +134,16 @@ export default async function handler(req) {
 
   const periodResults = result.slice(0, periodKeys.length);
   const usageResultsAll = result.slice(periodKeys.length, periodKeys.length + usageKeys.length);
-  const monitorResultsAll = result.slice(periodKeys.length + usageKeys.length);
+  const monitorResultsAll = result.slice(
+    periodKeys.length + usageKeys.length,
+    periodKeys.length + usageKeys.length + monitorKeys.length
+  );
+  const activityResultsAll = result.slice(periodKeys.length + usageKeys.length + monitorKeys.length);
 
   const usageResultsWeek = usageResultsAll.slice(0, WEEK_DAYS);
   const monitorResultsWeek = monitorResultsAll.slice(0, WEEK_DAYS);
   const monitorResultsToday = monitorResultsAll.slice(0, 1);
+  const activityResultsWeek = activityResultsAll.slice(0, WEEK_DAYS);
 
   const p = periodResults.map(r =>
     (r && r.result !== null && r.result !== undefined) ? (parseInt(r.result, 10) || 0) : 0
@@ -141,6 +152,10 @@ export default async function handler(req) {
   const aiToday = sumGetResults(usageResultsAll.slice(0, 1));
   const aiWeek = sumGetResults(usageResultsWeek);
   const aiMonth = sumGetResults(usageResultsAll);
+
+  const appActivityToday = sumGetResults(activityResultsAll.slice(0, 1));
+  const appActivityWeek = sumGetResults(activityResultsWeek);
+  const appActivityMonth = sumGetResults(activityResultsAll);
 
   return jsonResponse({
     activity_00_06_today: p[0],
@@ -154,9 +169,9 @@ export default async function handler(req) {
     ai_requests_week: aiWeek,
     ai_requests_month: aiMonth,
 
-    app_activity_today: computeAppActivity(aiToday),
-    app_activity_week: computeAppActivity(aiWeek),
-    app_activity_month: computeAppActivity(aiMonth),
+    app_activity_today: appActivityToday,
+    app_activity_week: appActivityWeek,
+    app_activity_month: appActivityMonth,
 
     rejected_or_failed_week: sumRejected(monitorResultsWeek),
     rejected_or_failed_month: sumRejected(monitorResultsAll),

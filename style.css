@@ -385,6 +385,7 @@ main#app {
   max-width: 720px;
   margin: 0 auto;
   height: min(72vh, 620px);
+  height: min(72dvh, 620px);
   display: flex;
   flex-direction: column;
   transform: translateY(110%);

@@ -2518,7 +2518,18 @@ backBtn.addEventListener("click", () => {
 
 // دعم زر/إيماءة رجوع الهاتف: عند أي رجوع في تاريخ المتصفح، نعيد ضبط
 // currentView من الحالة المحفوظة ونعيد الرسم مباشرة (بدون pushState مجددًا).
+//
+// ⚠️ استثناء مهم أضيف هنا: إن كانت نافذة المساعد (.sheet) مفتوحة لحظة وقوع
+// هذا الرجوع — سواء عبر زر رجوع الهاتف الفعلي، أو عبر history.back() التي
+// يستدعيها closeSheet() أدناه — فإننا نغلق النافذة فقط ولا نلمس currentView
+// ولا نعيد الرسم إطلاقًا؛ الشاشة التي تحت النافذة لم تتغير أصلاً. هذا ما
+// يجعل الضغطة الأولى على زر الرجوع تُغلق المساعد فقط، والضغطة التالية تتابع
+// التنقل الطبيعي بين الشاشات كالمعتاد.
 window.addEventListener("popstate", (e) => {
+  if (sheet.classList.contains("open")) {
+    closeSheetUI();
+    return;
+  }
   currentView = (e.state && e.state.name) ? e.state : { name: "home" };
   render();
 });
@@ -2596,6 +2607,10 @@ assistantInput.addEventListener("input", autoGrowInput);
 // textarea (سطر جديد)، والإرسال يتم فقط عبر الزر أعلاه.
 
 function openSheet() {
+  // نسجّل فتح النافذة كحالة جديدة في history (بنفس فلسفة goTo() المستخدمة
+  // لبقية الشاشات)، حتى يعرف زر رجوع الهاتف أن نافذة المساعد مفتوحة ويغلقها
+  // أولاً بدل تجاوزها مباشرة إلى الشاشة التي تحتها.
+  history.pushState({ name: "sheet" }, "");
   overlay.classList.add("open");
   sheet.classList.add("open");
   sheet.setAttribute("aria-hidden", "false");
@@ -2607,10 +2622,24 @@ function openSheet() {
   // خصوصًا على الجوال.
   setTimeout(() => assistantInput.focus(), 120);
 }
-function closeSheet() {
+// الإغلاق الفعلي لواجهة النافذة فقط (بدون لمس history) — يُستدعى إما من
+// closeSheet() مباشرة (حين لا توجد حالة "sheet" لسحبها)، أو من داخل معالج
+// popstate أعلاه عند سحب حالة "sheet" فعليًا.
+function closeSheetUI() {
   overlay.classList.remove("open");
   sheet.classList.remove("open");
   sheet.setAttribute("aria-hidden", "true");
+}
+// إغلاق مطلوب من المستخدم (زر الرجوع الداخلي للنافذة، أو النقر على الخلفية):
+// نستخدم history.back() بدل الإغلاق المباشر — تمامًا كما يفعل backBtn الأصلي
+// لبقية الشاشات — لسحب حالة "sheet" من history دون تركها متراكمة. الإغلاق
+// الفعلي للواجهة يحدث داخل معالج popstate أعلاه، فلا تكرار ولا تراكم.
+function closeSheet() {
+  if (history.state && history.state.name === "sheet") {
+    history.back();
+  } else {
+    closeSheetUI();
+  }
 }
 document.getElementById("assistantFab").addEventListener("click", openSheet);
 document.getElementById("assistantBackBtn").addEventListener("click", closeSheet);

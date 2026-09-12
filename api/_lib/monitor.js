@@ -35,6 +35,12 @@
    مباشرة (HGETALL)، بدل globalThis، ليبقى مصدر البيانات موحّدًا
    وصحيحًا لأي استخدام مستقبلي (Owner Dashboard). لا تزال غير
    مُستدعاة من أي نقطة API في هذا الإصدار.
+
+   إضافة لاحقة: "reject_message_too_long" أُضيف إلى ALLOWED_EVENTS
+   فقط (حماية طول الرسالة الواحدة في api/ask.js) — للإحصائيات
+   المستقبلية حصرًا. لم يُضَف عمدًا إلى REJECTION_EVENTS_FOR_FLOOD؛
+   هذا قرار منفصل يمكن مراجعته لاحقًا إن أُريد ربط هذا الحدث بكشف
+   الإغراق أيضًا.
    ============================================================ */
 
 import { CONFIG } from "./config.js";
@@ -55,13 +61,15 @@ const ALLOWED_EVENTS = Object.freeze([
   "bad_request",
   "empty_question",
   "reject_flood_detected",
+  "reject_message_too_long",
   "owner_auth_failed"
 ]);
 
 // الأحداث التي تُحسب ضمن نافذة كشف الإغراق — رفض مباشر لطلب مستخدم
 // فقط. تُستبعد عمدًا: provider_error (فشل مزوّد، ليس رفضًا)،
 // owner_auth_failed (مسار منفصل خاص باللوحة)، وreject_flood_detected
-// نفسها (تجنّب حلقة ذاتية).
+// نفسها (تجنّب حلقة ذاتية). reject_message_too_long غير مُدرَجة هنا
+// أيضًا حاليًا (قرار مقصود، راجع التوثيق أعلى الملف).
 const REJECTION_EVENTS_FOR_FLOOD = Object.freeze([
   "too_fast",
   "quota_limit",

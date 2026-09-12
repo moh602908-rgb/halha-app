@@ -30,6 +30,15 @@
    monitor.js) أصبحت جميعها async (تتصل بـ Redis عبر redisStore.js)
    بدل globalThis — لذلك أُضيف await على كل استدعاء لها في هذا الملف.
    لا تغيير آخر على تدفق أو منطق هذا الملف.
+
+   تحديث حماية طول الرسالة الواحدة: أُضيف فحص صريح يرفض أي رسالة
+   يتجاوز طولها MAX_SINGLE_MESSAGE_CHARS حرفًا، قبل أي معالجة أخرى
+   (قبل طبقة النوايا وقبل فحص السقف اليومي العام والفردي)، بردٍّ
+   فوري وواضح يطلب من المستخدم تقسيم سؤاله. هذا منفصل تمامًا عن
+   CONFIG.MAX_QUESTION_LENGTH (الذي يبقى كما هو دون أي تغيير، كخط
+   دفاع احتياطي ثانٍ يقصّ أي نص متبقٍ بصمت بعد هذا الفحص). الرسائل
+   المرفوضة هنا لا تُحتسب من الحد اليومي (10 أسئلة) ولا تصل إلى مزوّد
+   الذكاء الاصطناعي إطلاقًا.
    ============================================================ */
 
 export const config = { runtime: "edge" };
@@ -40,6 +49,13 @@ import { checkAndPrepareUsage, checkGlobalDailyCap, incrementGlobalDailyUsage } 
 import { buildSystemPrompt, sanitizeHistory, sanitizeGuides } from "./_lib/prompt.js";
 import { recordEvent } from "./_lib/monitor.js";
 import { classifyIntent } from "./_lib/intent.js";
+
+// حماية إضافية داخل الطلب الواحد: حد أقصى لعدد أحرف الرسالة الواحدة،
+// منفصل عن الحد اليومي (10 أسئلة) ومنفصل عن CONFIG.MAX_QUESTION_LENGTH.
+// الهدف: منع رسالة ضخمة واحدة تحتوي عشرات الأسئلة، دون التأثير على
+// المستخدم العادي. القيمة ثابتة هنا عمدًا (وليست في config.js) لأنها
+// خاصة بهذا الفحص فقط ولا يشاركها أي ملف آخر في المشروع.
+const MAX_SINGLE_MESSAGE_CHARS = 1000;
 
 function jsonResponse(obj, status, extraHeaders) {
   return new Response(JSON.stringify(obj), {
@@ -131,7 +147,21 @@ export default async function handler(req) {
     return jsonResponse({ error: "bad_request" }, 400);
   }
 
-  const question = String(body?.question || "").trim().slice(0, CONFIG.MAX_QUESTION_LENGTH);
+  const rawQuestion = String(body?.question || "").trim();
+
+  // حماية طول الرسالة الواحدة — قبل طبقة النوايا وقبل أي فحص للحد
+  // اليومي (فردي أو عام)، وقبل القصّ الصامت عبر CONFIG.MAX_QUESTION_LENGTH
+  // أدناه. لا تُحتسب هذه الرسالة من الحد اليومي ولا تصل لمزوّد الذكاء
+  // الاصطناعي.
+  if (rawQuestion.length > MAX_SINGLE_MESSAGE_CHARS) {
+    await recordEvent("reject_message_too_long");
+    return jsonResponse({
+      error: "message_too_long",
+      message: "الرسالة طويلة جدًا. يرجى تقسيم سؤالك إلى أجزاء أقصر ثم المحاولة مرة أخرى."
+    }, 400);
+  }
+
+  const question = rawQuestion.slice(0, CONFIG.MAX_QUESTION_LENGTH);
   if (!question) {
     await recordEvent("empty_question");
     return jsonResponse({ error: "empty_question" }, 400);

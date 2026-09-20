@@ -90,6 +90,19 @@ function logSecurityEvent(kind, req) {
   } catch { /* لا نكسر الطلب أبدًا بسبب فشل تسجيل */ }
 }
 
+// وقت الخادم الحقيقي (UTC فقط) — يُمرَّر إلى buildSystemPrompt فقط لمنع
+// اختلاق التاريخ/اليوم/الوقت في الردود. لا مكتبة خارجية، لا API خارجي،
+// ولا علاقة له بأي منطق حماية أو عدّاد أو حد (منفصل تمامًا عن Redis).
+function currentServerTimeInfo() {
+  const now = new Date();
+  const dayNamesUTC = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
+  return {
+    isoUTC: now.toISOString(),
+    dayNameUTC: dayNamesUTC[now.getUTCDay()],
+    dateUTC: now.toISOString().slice(0, 10)
+  };
+}
+
 export default async function handler(req) {
   if (req.method !== "POST") {
     await recordEvent("method_not_allowed");
@@ -223,7 +236,7 @@ export default async function handler(req) {
 
   const history = sanitizeHistory(body?.history, CONFIG.MAX_HISTORY_MESSAGES, CONFIG.MAX_MESSAGE_CHARS);
   const guideContext = sanitizeGuides(body?.guides, CONFIG.MAX_GUIDES_CONTEXT);
-  const system = buildSystemPrompt(guideContext);
+  const system = buildSystemPrompt(guideContext, currentServerTimeInfo());
   const messages = [...history, { role: "user", content: question }];
 
   let answer;

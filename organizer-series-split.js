@@ -29,8 +29,8 @@
      يُستثنى ناعمًا (override.excluded = true) — لا حذف فعلي — حتى لا
      يظهر مكرّرًا مع حدوث الجذر الجديد R2 عند D.
    - أي حدوث آخر (حالة نهائية completed/not_completed، أو له override
-     فيه أي محتوى، أي اختيار/تعديل صريح من المستخدم): يبقى كما هو دون
-     أي تغيير ويُعاد ذكره في retained_occ_keys.
+     فيه أي محتوى، أو له postpone، أي اختيار/تعديل صريح من المستخدم):
+     يبقى كما هو دون أي تغيير ويُعاد ذكره في retained_occ_keys.
    ============================================================ */
 
 import { openOrganizerDB } from "./organizer-db.js";
@@ -189,7 +189,8 @@ export async function splitSeriesFromDate(params = {}) {
         if (typeof occ.date !== "string" || occ.date < split_date) continue; // قبل D: لا يُلمَس إطلاقًا
         if (occ.override && occ.override.excluded === true) continue;     // مستثنى سابقًا: يبقى كما هو
         const isPlaceholder =
-          occ.status === "upcoming" && (!occ.override || Object.keys(occ.override).length === 0);
+          occ.status === "upcoming" && !occ.postpone &&
+          (!occ.override || Object.keys(occ.override).length === 0);
         if (isPlaceholder) toExclude.push(occ); else retained.push(occ.occ_key);
       }
 

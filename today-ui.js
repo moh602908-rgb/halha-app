@@ -1,14 +1,17 @@
 /* ============================================================
    today-ui.js — Organizer Core: شاشة «اليوم» (Today UI)
    ============================================================
-   طبقة واجهة جديدة، مستقلة تمامًا عن app.js/index.html/ask.js —
-   لا علاقة لها بمسار AI، ولا شبكة، ولا Gemini.
+   طبقة واجهة، مستقلة تمامًا عن app.js/index.html/ask.js — لا علاقة
+   لها بمسار AI، ولا شبكة، ولا Gemini.
 
-   الاستيراد: listAllOccurrences من organizer-selection.js (جديد)،
-   classifyTodayGroup وorderTodayOccurrences من organizer-today.js
-   (بلا تعديل)، getEffectiveSchedule وquickPostpone وpostponeOccurrence
-   من organizer-postpone.js (بلا تعديل)، updateOccurrence من
-   organizer-crud.js (بلا تعديل). لا تعديل على أي ملف معتمد.
+   الاستيراد: listAllOccurrences من organizer-selection.js،
+   classifyTodayGroup وorderTodayOccurrences من organizer-today.js،
+   getEffectiveSchedule وquickPostpone وpostponeOccurrence من
+   organizer-postpone.js، updateOccurrence وgetOccurrence من
+   organizer-crud.js، deleteOccurrence من organizer-editing.js،
+   generateNextOccurrenceForSeries من organizer-recurrence.js،
+   stopSeries من organizer-series-stop.js (جديد)، buildAddModal من
+   today-add.js (جديد). لا تعديل على أي من الملفات السبعة المعتمدة.
 
    منطق "اختيار عناصر اليوم" (Selection) — قرار مُشتق حرفيًا من
    Functional Specification V1.0 البند 14: الفائت يبقى ظاهرًا من أي
@@ -16,17 +19,27 @@
    تاريخه الفعّال هو اليوم الحالي. هذا المنطق هنا فقط، وليس داخل
    organizer-today.js (الذي يبقى ترتيبًا نقيًا بلا اختيار، كما هو).
 
-   نطاق الإجراءات المُنفَّذة (كلها إجراءات على نسخة واحدة فقط، لا تُشغِّل
-   سؤال "هذه المرة/كل مرة" — البند 7-أ حرفيًا): إكمال، لم يكتمل، تراجع
-   (خروج صريح من حالة نهائية)، تأجيل سريع (بعد ساعة/غدًا)، تأجيل مخصص.
-   لا إضافة عنصر جديد، ولا حذف، ولا تعديل عنوان/وقت السلسلة، ولا تعديل
-   إعداد تكرار — هذه خارج نطاق Today UI بقرار صريح (راجع التقرير).
+   "لحاق" السلاسل المتكررة بلحظة العرض — إصلاح حقيقي مكتشف في هذه
+   الحزمة: generateNextOccurrenceForSeries (المعتمدة، بلا تعديل)
+   تولّد خطوة واحدة فقط من آخر حدوث موجود فعليًا، ولا "تلحق" باليوم
+   الحالي تلقائيًا. بدون هذا، سلسلة لم تُفتح شاشة اليوم لعدة أيام
+   تَغيب حدوثاتها عن اليوم. الحل: استدعاء الدالة نفسها في حلقة قبل كل
+   عرض (catchUpRecurringSeries)، بلا أي تعديل على organizer-recurrence.js.
+
+   نطاق الإجراءات: إكمال/لم يكتمل/تراجع (فئة أ — البند 7-أ، لا تُشغِّل
+   أي سؤال)، تأجيل سريع/مخصص (فئة أ أيضًا — البند 13)، وحذف (فئة ب إن
+   كان العنصر ضمن سلسلة متكررة — البند 7-ب: يُشغِّل سؤال "هذه المرة
+   فقط/كل مرة"؛ فئة أ إن كان عنصرًا مستقلًا — تأكيد بسيط فقط، البند 2).
    ============================================================ */
 
 import { listAllOccurrences } from "./organizer-selection.js";
 import { classifyTodayGroup, orderTodayOccurrences } from "./organizer-today.js";
 import { getEffectiveSchedule, quickPostpone, postponeOccurrence } from "./organizer-postpone.js";
-import { updateOccurrence } from "./organizer-crud.js";
+import { updateOccurrence, getOccurrence } from "./organizer-crud.js";
+import { deleteOccurrence as softDeleteOccurrence } from "./organizer-editing.js";
+import { generateNextOccurrenceForSeries } from "./organizer-recurrence.js";
+import { stopSeries } from "./organizer-series-stop.js";
+import { buildAddModal } from "./today-add.js";
 
 const REFRESH_INTERVAL_MS = 60 * 1000; // إعادة رسم دورية محلية فقط (بلا شبكة) لإظهار الانتقال قادم→فائت تلقائيًا
 const p2 = (n) => String(n).padStart(2, "0");
@@ -62,10 +75,35 @@ function arabicDayTitle(now) {
   }
 }
 
+const MAX_CATCHUP_STEPS_PER_SERIES = 10000; // حارس أمان بحت — لا يُفعَّل في أي استخدام واقعي
+
+// "لحاق" كل سلسلة متكررة نشطة حتى تاريخ اليوم، قبل أي عرض — راجع التعليق أعلى الملف.
+async function catchUpRecurringSeries(all, todayStr) {
+  const roots = all.filter((o) => o.occ_key === o.root_id && o.recurrence);
+  let changed = false;
+  for (const root of roots) {
+    let latest = all
+      .filter((o) => o.root_id === root.root_id)
+      .reduce((max, o) => (o.date > max ? o.date : max), root.date);
+    let steps = 0;
+    while (latest < todayStr && steps < MAX_CATCHUP_STEPS_PER_SERIES) {
+      const next = await generateNextOccurrenceForSeries(root.root_id);
+      if (!next) break; // series_end بلغته — توقف طبيعي، ليس خطأ
+      latest = next.date;
+      changed = true;
+      steps++;
+    }
+  }
+  return changed;
+}
+
 // ---------- منطق اختيار عناصر اليوم (Selection) — البند 14 ----------
 async function loadTodayView(now = new Date()) {
-  const all = await listAllOccurrences();
+  let all = await listAllOccurrences();
   const todayStr = localDateStr(now);
+  if (await catchUpRecurringSeries(all, todayStr)) {
+    all = await listAllOccurrences(); // إعادة قراءة بعد توليد حدوثات جديدة أثناء اللحاق
+  }
   const relevant = all.filter((occ) => {
     const group = classifyTodayGroup(occ, now);
     if (group === "excluded") return false;
@@ -96,6 +134,8 @@ const actions = {
   postponeHour: withBusyGuard((occ_key) => quickPostpone(occ_key, { amount: 1, unit: "hours" })),
   postponeTomorrow: withBusyGuard((occ_key) => quickPostpone(occ_key, { amount: 1, unit: "days" })),
   postponeCustom: withBusyGuard((occ_key, date, time) => postponeOccurrence(occ_key, { date, time })),
+  deleteSingle: withBusyGuard((occ_key) => softDeleteOccurrence(occ_key)),
+  stopWholeSeries: withBusyGuard((root_id) => stopSeries(root_id)),
 };
 
 let toastTimer = null;
@@ -119,7 +159,8 @@ function renderItem(occ, groupName) {
   const body = el("div", { class: "item__body" });
   body.appendChild(el("div", { class: "item__title" }, occ.title || ""));
   if (eff.time) {
-    body.appendChild(el("div", { class: "item__time" }, eff.time));
+    const timeLabel = occ.endTime ? `${eff.time}–${occ.endTime}` : eff.time;
+    body.appendChild(el("div", { class: "item__time" }, timeLabel));
   }
   card.appendChild(body);
 
@@ -144,8 +185,54 @@ function renderItem(occ, groupName) {
     );
     actionsRow.appendChild(renderCustomPostponeToggle(occ, eff));
   }
+  actionsRow.appendChild(renderDeleteControl(occ));
   card.appendChild(actionsRow);
   return card;
+}
+
+// حذف — البند 2 (عنصر مستقل: تأكيد بسيط) والبند 7-ب (عنصر ضمن سلسلة
+// متكررة: سؤال "هذه المرة فقط/كل مرة"). الفحص عبر جلب سجل الجذر
+// الفعلي (occ.root_id) والتأكد إن كان يحمل recurrence.
+function renderDeleteControl(occ) {
+  const wrap = el("div", { class: "delete-control" });
+  const toggleBtn = el("button", { class: "btn btn--danger" }, "🗑 حذف");
+  const panel = el("div", { class: "delete-control__panel hidden" });
+
+  toggleBtn.addEventListener("click", async () => {
+    if (!panel.classList.contains("hidden")) {
+      panel.classList.add("hidden");
+      return;
+    }
+    panel.innerHTML = "";
+    panel.appendChild(el("span", { class: "delete-control__q" }, "..."));
+    panel.classList.remove("hidden");
+
+    let root = null;
+    try {
+      root = await getOccurrence(occ.root_id);
+    } catch (_) { /* يُعامَل كعنصر مستقل عند الفشل */ }
+
+    panel.innerHTML = "";
+    if (root && root.recurrence) {
+      panel.appendChild(el("span", { class: "delete-control__q" }, "حذف هذه المرة فقط أم كل مرة؟"));
+      panel.appendChild(
+        el("button", { class: "btn btn--danger", onclick: () => actions.deleteSingle(occ.occ_key) }, "هذه المرة فقط")
+      );
+      panel.appendChild(
+        el("button", { class: "btn btn--danger", onclick: () => actions.stopWholeSeries(occ.root_id) }, "كل مرة (إيقاف السلسلة)")
+      );
+    } else {
+      panel.appendChild(el("span", { class: "delete-control__q" }, "تأكيد الحذف؟"));
+      panel.appendChild(
+        el("button", { class: "btn btn--danger", onclick: () => actions.deleteSingle(occ.occ_key) }, "تأكيد")
+      );
+    }
+    panel.appendChild(el("button", { class: "btn btn--ghost", onclick: () => panel.classList.add("hidden") }, "إلغاء"));
+  });
+
+  wrap.appendChild(toggleBtn);
+  wrap.appendChild(panel);
+  return wrap;
 }
 
 function renderCustomPostponeToggle(occ, eff) {
@@ -220,12 +307,20 @@ function renderEmptyState() {
 function renderAddButton() {
   return el(
     "button",
-    {
-      class: "btn btn--fab",
-      onclick: () => showToast("إنشاء عنصر جديد سيُضاف في مرحلة لاحقة"),
-    },
+    { class: "btn btn--fab", onclick: () => openAddModal() },
     "+ إضافة"
   );
+}
+
+function openAddModal() {
+  const existing = document.getElementById("today-add-modal");
+  if (existing) return; // مفتوح بالفعل — لا نكرّر
+  const modal = buildAddModal({
+    onCreated: () => { modal.remove(); renderApp(); },
+    onCancel: () => modal.remove(),
+  });
+  modal.id = "today-add-modal";
+  document.body.appendChild(modal);
 }
 
 // ---------- الرسم الكامل ----------

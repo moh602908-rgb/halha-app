@@ -62,10 +62,45 @@
   }
   .btn--complete { background: var(--primary); color: #fff; }
   .btn--ghost { background: var(--paper); color: var(--ink-soft); border: 1px solid var(--border); }
+  .btn--danger { background: var(--paper); color: var(--urgent); border: 1px solid var(--urgent); }
   .btn--fab {
     background: var(--accent); color: #fff;
     border-radius: 999px; padding: 10px 18px; font-size: 14px; box-shadow: var(--shadow);
   }
+
+  .delete-control { position: relative; }
+  .delete-control__panel {
+    display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+    margin-top: 8px; padding: 8px; background: var(--urgent-tint);
+    border-radius: var(--radius-sm); border: 1px solid var(--urgent);
+    width: 100%;
+  }
+  .delete-control__panel.hidden { display: none; }
+  .delete-control__q { font-size: 12.5px; color: var(--ink); width: 100%; }
+
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(23, 27, 38, 0.45);
+    display: flex; align-items: flex-end; justify-content: center; z-index: 50;
+  }
+  .modal-card {
+    background: var(--paper); width: 100%; max-width: 640px;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    padding: 20px 18px 26px; max-height: 88vh; overflow-y: auto;
+    box-shadow: 0 -8px 30px rgba(23, 27, 38, 0.18);
+  }
+  .modal-card__title { margin: 0 0 14px; font-size: 17px; color: var(--primary); }
+  .modal-card__actions { display: flex; gap: 8px; margin-top: 16px; }
+  .form-label { display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; color: var(--ink-soft); margin-bottom: 12px; }
+  .form-row { display: flex; flex-wrap: wrap; gap: 10px; }
+  .form-row .form-label { flex: 1; min-width: 120px; }
+  .field-error { color: var(--urgent); font-size: 13px; margin: 0 0 10px; }
+  .field-error.hidden { display: none; }
+  .type-hint { font-size: 12.5px; color: var(--ink-soft); margin: -6px 0 12px; }
+  .radio-row { display: flex; gap: 14px; margin-bottom: 12px; font-size: 13.5px; }
+  .radio-row.hidden { display: none; }
+  .weekday-checks { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  .weekday-checks.hidden { display: none; }
+  .weekday-check { display: flex; align-items: center; gap: 4px; font-size: 12.5px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 4px 8px; }
 
   .section { margin-bottom: 22px; }
   .section__title {

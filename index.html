@@ -16,6 +16,22 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&family=Aref+Ruqaa:wght@700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css" />
+<style>
+  /* ============================================================
+     إضافة Organizer/Today UI — Technical Decision: تكامل نهائي.
+     رابط تنقّل إضافي فقط إلى صفحة مستقلة (today.html)؛ لا تغيير على
+     أي قاعدة موجودة في style.css، ولا أي منطق JS جديد هنا أو في
+     app.js. أُضيفت هنا (لا في style.css) ليبقى التغيير معزولًا
+     وسهل المراجعة/التراجع في ملف واحد.
+     ============================================================ */
+  .topbar__today-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    color: #fff; text-decoration: none; font-size: 13px; font-weight: 600;
+    background: rgba(255,255,255,0.16); border: 1px solid rgba(255,255,255,0.35);
+    border-radius: 999px; padding: 7px 14px; white-space: nowrap;
+  }
+  .topbar__today-link:active { background: rgba(255,255,255,0.28); }
+</style>
 </head>
 <body>
 
@@ -28,6 +44,10 @@
       <h1 class="logo">دلّني <span class="logo-ai">AI</span></h1>
       <p class="logo-sub">مرجع عربي منظم، ومساعد ذكي عند الحاجة</p>
     </div>
+    <a href="today.html" class="topbar__today-link" aria-label="اليوم">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="5.5" width="16" height="14.5" rx="2.5"/><path d="M8 3.5v3.5M16 3.5v3.5M4 10h16" stroke-linecap="round"/></svg>
+      <span>اليوم</span>
+    </a>
   </div>
 </header>
 

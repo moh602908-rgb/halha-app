@@ -30,6 +30,8 @@
 
 import { getOccurrence, updateOccurrence } from "./organizer-crud.js";
 import { openOrganizerDB } from "./organizer-db.js";
+import { getEffectiveSchedule } from "./organizer-postpone.js";
+import { assertValidField, assertEndAfterStart } from "./organizer-model.js";
 
 /**
  * حذف ناعم لحدوث واحد: يدمج override.excluded = true مع أي override
@@ -54,13 +56,20 @@ export async function deleteOccurrence(occ_key) {
  * occ_key/root_id/status من هذه الواجهة تحديدًا.
  */
 export async function editOccurrenceContent(occ_key, changes = {}) {
+  const has = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
   const allowed = {};
-  if (Object.prototype.hasOwnProperty.call(changes, "title")) allowed.title = changes.title;
-  if (Object.prototype.hasOwnProperty.call(changes, "date")) allowed.date = changes.date;
-  if (Object.prototype.hasOwnProperty.call(changes, "time")) allowed.time = changes.time;
+  if (has(changes, "title")) allowed.title = changes.title;
+  if (has(changes, "date")) allowed.date = changes.date;
+  if (has(changes, "time")) allowed.time = changes.time;
+  // Foundation v2: endTime قابل للتحرير "لهذه المرة فقط" (null = مسح النهاية).
+  const editsEnd = has(changes, "endTime");
+  if (editsEnd) {
+    assertValidField("endTime", changes.endTime);
+    allowed.endTime = changes.endTime === undefined ? null : changes.endTime;
+  }
 
   if (Object.keys(allowed).length === 0) {
-    throw new Error("organizer_no_editable_fields: مرّر title و/أو date و/أو time على الأقل");
+    throw new Error("organizer_no_editable_fields: لا توجد حقول قابلة للتحرير (title / date / time / endTime)");
   }
 
   const existing = await getOccurrence(occ_key);
@@ -68,15 +77,31 @@ export async function editOccurrenceContent(occ_key, changes = {}) {
     throw new Error(`organizer_not_found: لا يوجد حدوث بالمفتاح ${occ_key}`);
   }
 
-  // حدوث مؤجَّل + تعديل date/time: يُحذف postpone ويصبح override هو الوقت الفعّال.
-  const touchesSchedule =
-    Object.prototype.hasOwnProperty.call(allowed, "date") ||
-    Object.prototype.hasOwnProperty.call(allowed, "time");
-  if (touchesSchedule && Object.prototype.hasOwnProperty.call(existing, "postpone")) {
+  // تحرير التاريخ/الوقت على موعد مؤجَّل: يسقط postpone ويصبح override هو الجدولة الفعلية.
+  const touchesSchedule = has(allowed, "date") || has(allowed, "time");
+  const postponed = has(existing, "postpone");
+
+  // تحرير endTime على موعد مؤجَّل: النهاية الصريحة مطلقة بالنسبة للبداية المؤجَّلة الحالية، لذلك تُثبَّت البداية
+  // الفعلية في override ويُسقَط postpone (نفس الجدولة الفعلية، ونفس مبدأ editDroppingPostpone).
+  if (editsEnd && postponed && !touchesSchedule) {
+    const eff = getEffectiveSchedule(existing);
+    allowed.date = eff.date;
+    allowed.time = eff.time;
+  }
+
+  // التحقق قبل الكتابة: النهاية الصريحة يجب أن تكون بعد البداية الفعلية الناتجة (ولا نهاية بلا بداية).
+  const prospective = { ...existing, override: { ...(existing.override || {}), ...allowed } };
+  if (has(allowed, "date") || has(allowed, "time")) delete prospective.postpone;
+  const ov = prospective.override;
+  if (has(ov, "endTime") && ov.endTime != null) {
+    assertEndAfterStart(getEffectiveSchedule(prospective).time, ov.endTime);
+  }
+
+  if (postponed && (has(allowed, "date") || has(allowed, "time"))) {
     return editDroppingPostpone(occ_key, allowed);
   }
 
-  // دمج مع أي override سابق (مثل excluded من عملية حذف سابقة) بدل استبداله بالكامل.
+  // تحرير عادي: دمج في override (مع الحفاظ على excluded وغيره) بلا مساس بالبقية.
   const mergedOverride = { ...(existing.override || {}), ...allowed };
   return updateOccurrence(occ_key, { override: mergedOverride });
 }

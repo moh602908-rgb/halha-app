@@ -3,7 +3,7 @@
    وإلا فلن يكتشف المتصفح وجود نسخة جديدة، وستبقى النسخة القديمة معروضة
    للمستخدمين رغم نجاح الرفع على GitHub وVercel. */
 
-const APP_VERSION = "v2.2.2";
+const APP_VERSION = "v2.3.0";
 const CACHE_NAME = `dallini-cache-${APP_VERSION}`;
 
 const FILES_TO_CACHE = [
@@ -16,7 +16,22 @@ const FILES_TO_CACHE = [
   "./icon-180.png",
   "./icon-192.png",
   "./icon-512.png",
-  "./icon-512-maskable.png"
+  "./icon-512-maskable.png",
+  // Foundation v2: صفحة اليوم وملفات Organizer تُخزَّن عند تثبيت الـ SW (التحميل الأول ← التخزين ← Offline)
+  "./today.html",
+  "./today-ui.js",
+  "./today-add.js",
+  "./organizer-db.js",
+  "./organizer-model.js",
+  "./organizer-schedule.js",
+  "./organizer-crud.js",
+  "./organizer-recurrence.js",
+  "./organizer-editing.js",
+  "./organizer-series-split.js",
+  "./organizer-series-stop.js",
+  "./organizer-postpone.js",
+  "./organizer-selection.js",
+  "./organizer-today.js"
 ];
 
 self.addEventListener("install", (event) => {
@@ -91,7 +106,8 @@ self.addEventListener("fetch", (event) => {
         return response;
       })
       .catch(async () => {
-        const cached = await caches.match(req);
+        // ignoreSearch: today.html?x=1 (أو أي رابط بمعاملات) يجب أن يجد النسخة المخزنة عند انقطاع الشبكة.
+        const cached = (await caches.match(req)) || (await caches.match(req, { ignoreSearch: true }));
         if (cached) return cached;
         // طلب تنقّل (فتح صفحة) بدون إنترنت وبدون نسخة مخزنة له تحديدًا:
         // أعد الصفحة الرئيسية المخزنة بدل ترك المتصفح يعرض خطأ شبكة فارغ.

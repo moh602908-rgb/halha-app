@@ -29,6 +29,7 @@
    ============================================================ */
 
 import { createOccurrence, getOccurrence, listOccurrencesByRootId } from "./organizer-crud.js";
+import { pickExtraFields, pickInheritedFields } from "./organizer-model.js";
 
 const ALLOWED_TYPES = new Set(["daily", "weekly", "monthly"]);
 
@@ -109,7 +110,7 @@ export function computeNextDate(currentDateStr, recurrence) {
  * ينشئ الحدوث الأول لسلسلة متكررة. occ_key لهذا السجل = root_id نفسه
  * (يُستخدَم كعلامة "هذا هو الجذر الذي يحمل قاعدة التكرار").
  */
-export async function createRecurringSeries({ root_id, title, itemType, time, date, recurrence }) {
+export async function createRecurringSeries({ root_id, title, itemType, time, date, recurrence, endTime, domain, priority, note, space_id }) {
   if (!root_id) throw new Error("organizer_missing_root_id: root_id مطلوب لإنشاء سلسلة");
   if (!recurrence || !ALLOWED_TYPES.has(recurrence.type)) {
     throw new Error(`organizer_invalid_recurrence_type: "${recurrence && recurrence.type}"`);
@@ -123,6 +124,8 @@ export async function createRecurringSeries({ root_id, title, itemType, time, da
     date,
     status: "upcoming",
     recurrence,
+    // Foundation v2: endTime/domain/priority/note/space_id (اختيارية، تُحذف الفارغة، وتُتحقق في createOccurrence).
+    ...pickExtraFields({ endTime, domain, priority, note, space_id }),
   });
 }
 
@@ -161,6 +164,8 @@ export async function generateNextOccurrenceForSeries(root_id) {
     time: root.time || null,
     date: nextDate,
     status: "upcoming",
+    // Foundation v2: كل حدوث جديد يرث endTime وdomain وpriority وnote وspace_id من الجذر (endTime ثابت لكل حدوث).
+    ...pickInheritedFields(root),
     // recurrence غير مُضافة هنا عمدًا — القاعدة تبقى في الجذر فقط.
   });
 }

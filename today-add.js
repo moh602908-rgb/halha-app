@@ -16,7 +16,8 @@
    "interval" مخصص أو "series_end" عند الإنشاء — غير مذكورين في نص
    البند 6 لإنشاء عنصر جديد).
 
-   حقل جديد يُضاف هنا فقط عند الإنشاء: endTime (وقت نهاية اختياري
+   Foundation v2: endTime وdomain وpriority وnote تُحفظ للعناصر المفردة وللسلاسل المتكررة (تنتقل لكل حدوث).
+   endTime <= time مسموح ويعني عبور منتصف الليل (تُحسب المدة دائريًا)؛ الممنوع الوحيد تساوي endTime مع time.
    للموعد). البند 4/8 يفترضان وجود "وقت نهاية صريح" للموعد، ولا حقل
    له في نموذج البيانات الحالي — إضافة عادية بلا فهرس، لا تحتاج أي
    تعديل على organizer-db.js (راجع التقرير). لا يُستخدَم في أي منطق
@@ -25,6 +26,9 @@
 
 import { createOccurrence } from "./organizer-crud.js";
 import { createRecurringSeries } from "./organizer-recurrence.js";
+import {
+  KNOWN_DOMAINS, DOMAIN_LABELS_AR, PRIORITIES, PRIORITY_LABELS_AR, NOTE_MAX_LENGTH, pickExtraFields,
+} from "./organizer-model.js";
 
 const TITLE_MAX = 200; // البند 3: "حد أقصى معقول (تفصيل تنفيذي لاحق)" — قيمة تنفيذية مبدئية، سهل تعديلها هنا فقط
 const WEEKDAYS = [
@@ -79,6 +83,21 @@ export function buildAddModal({ onCreated, onCancel }) {
   const dateInput = el("input", { type: "date", class: "input", value: todayLocalDateStr() });
   const timeInput = el("input", { type: "time", class: "input" });
   const endTimeInput = el("input", { type: "time", class: "input", disabled: "disabled" });
+
+  // Foundation v2: المجال والأولوية والملاحظة (اختيارية؛ الفارغ لا يُحفظ).
+  const domainSelect = el(
+    "select", { class: "input" },
+    el("option", { value: "" }, "بدون مجال"),
+    ...KNOWN_DOMAINS.map((d) => el("option", { value: d }, DOMAIN_LABELS_AR[d]))
+  );
+  const prioritySelect = el(
+    "select", { class: "input" },
+    el("option", { value: "" }, "بدون أولوية"),
+    ...PRIORITIES.map((pr) => el("option", { value: pr }, PRIORITY_LABELS_AR[pr]))
+  );
+  const noteInput = el("textarea", {
+    class: "input", rows: "2", maxlength: String(NOTE_MAX_LENGTH), placeholder: "ملاحظة (اختياري)",
+  });
 
   // مفتاح تذكير⟷موعد — يظهر فقط عند وقت واحد بلا نهاية (البند 5)
   const reminderRadio = el("input", { type: "radio", name: "kind", value: "reminder", checked: "checked" });
@@ -170,12 +189,22 @@ export function buildAddModal({ onCreated, onCancel }) {
     else if (endTime) itemType = "appointment";
     else itemType = appointmentRadio.checked ? "appointment" : "reminder";
 
+    // endTime أصغر من/يساوي time لا تُرفض هنا: قد تعني عبور منتصف الليل (تُحسب دائريًا في organizer-model.js).
+    // المرفوض الوحيد هو التساوي الحرفي (مدة صفر/24 ساعة ملتبسة)، وorganizer-crud.js يرفضه أصلًا.
+    if (endTime && endTime === time) {
+      errorBox.textContent = "وقت النهاية لا يمكن أن يساوي وقت البداية.";
+      errorBox.classList.remove("hidden");
+      return;
+    }
+    const extras = pickExtraFields({ domain: domainSelect.value, priority: prioritySelect.value, note: noteInput.value });
+
     const recType = recurrenceSelect.value;
     saveBtn.disabled = true;
     try {
       if (recType === "none") {
         const rec = { occ_key: newId(), title, itemType, date, time, status: "upcoming" };
         rec.root_id = rec.occ_key;
+        Object.assign(rec, extras);
         if (endTime) rec.endTime = endTime;
         await createOccurrence(rec);
       } else {
@@ -189,8 +218,7 @@ export function buildAddModal({ onCreated, onCancel }) {
         } else {
           recurrence = { type: "monthly", anchor_day: new Date(`${date}T00:00:00`).getDate(), interval: 1 };
         }
-        await createRecurringSeries({ root_id: newId(), title, itemType, time, date, recurrence });
-        // ملاحظة: endTime لعنصر متكرر غير مدعوم هنا (البند 4/8 لا يربط النهاية الصريحة بالتكرار صراحة)
+        await createRecurringSeries({ root_id: newId(), title, itemType, time, date, recurrence, endTime, ...extras });
       }
       onCreated();
     } catch (err) {
@@ -210,6 +238,13 @@ export function buildAddModal({ onCreated, onCancel }) {
       el("label", { class: "form-label" }, "وقت النهاية (اختياري)", endTimeInput)
     )
   );
+  card.appendChild(
+    el("div", { class: "form-row" },
+      el("label", { class: "form-label" }, "المجال", domainSelect),
+      el("label", { class: "form-label" }, "الأولوية", prioritySelect)
+    )
+  );
+  card.appendChild(el("label", { class: "form-label" }, "ملاحظة", noteInput));
   card.appendChild(typeHint);
   card.appendChild(kindRow);
   card.appendChild(el("label", { class: "form-label" }, "التكرار", recurrenceSelect));

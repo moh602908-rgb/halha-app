@@ -35,6 +35,7 @@
 
 import { openOrganizerDB } from "./organizer-db.js";
 import { computeNextDate } from "./organizer-recurrence.js";
+import { resolveSplitExtraFields } from "./organizer-model.js";
 
 const OCCURRENCES_STORE = "occurrences";
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -172,6 +173,9 @@ export async function splitSeriesFromDate(params = {}) {
       const newItemType = hasOwn(params, "itemType") ? params.itemType : root.itemType;
       const newTime = hasOwn(params, "time") ? (params.time || null) : (root.time || null);
 
+      // Foundation v2: الجذر الجديد يرث endTime/domain/priority/note/space_id (ويجوز تجاوزها عبر params).
+      const extraFields = resolveSplitExtraFields(root, params, newTime);
+
       // R2 يجب ألا يكون موجودًا، ولا يوجد أي سجل يحمل root_id هذا (لا اختلاط)
       if ((await reqP(store.get(new_root_id))) !== undefined) {
         throw new Error(`organizer_split_new_root_id_exists: occ_key ${new_root_id} موجود مسبقًا`);
@@ -207,6 +211,7 @@ export async function splitSeriesFromDate(params = {}) {
         date: split_date,
         status: "upcoming",
         recurrence: newRec,
+        ...extraFields,
       };
       await reqP(store.add(newRoot));
 

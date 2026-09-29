@@ -40,6 +40,8 @@ import { deleteOccurrence as softDeleteOccurrence } from "./organizer-editing.js
 import { generateNextOccurrenceForSeries } from "./organizer-recurrence.js";
 import { stopSeries } from "./organizer-series-stop.js";
 import { buildAddModal } from "./today-add.js";
+import { getEffectiveEnd } from "./organizer-schedule.js";
+import { DOMAIN_LABELS_AR, PRIORITY_LABELS_AR } from "./organizer-model.js";
 
 const REFRESH_INTERVAL_MS = 60 * 1000; // إعادة رسم دورية محلية فقط (بلا شبكة) لإظهار الانتقال قادم→فائت تلقائيًا
 const p2 = (n) => String(n).padStart(2, "0");
@@ -159,9 +161,23 @@ function renderItem(occ, groupName) {
   const body = el("div", { class: "item__body" });
   body.appendChild(el("div", { class: "item__title" }, occ.title || ""));
   if (eff.time) {
-    const timeLabel = occ.endTime ? `${eff.time}–${occ.endTime}` : eff.time;
+    // النهاية مشتقة من البداية الفعلية + مدة الموعد (لا تبقى نهاية قديمة بعد تأجيل/تحرير).
+    const end = getEffectiveEnd(occ);
+    let timeLabel = eff.time;
+    if (end) {
+      timeLabel = `${eff.time} – ${end.time}`;
+      if (end.date !== eff.date) timeLabel += " (اليوم التالي)";
+    }
     body.appendChild(el("div", { class: "item__time" }, timeLabel));
   }
+  // Foundation v2: المجال والأولوية والملاحظة (نصوص فقط عبر createTextNode، لا innerHTML).
+  const chips = [];
+  if (occ.domain) chips.push(el("span", { class: "item__chip" }, DOMAIN_LABELS_AR[occ.domain] || occ.domain));
+  if (occ.priority === "high" || occ.priority === "low") {
+    chips.push(el("span", { class: `item__chip item__chip--${occ.priority}` }, `أولوية ${PRIORITY_LABELS_AR[occ.priority]}`));
+  }
+  if (chips.length) body.appendChild(el("div", { class: "item__meta" }, ...chips));
+  if (occ.note) body.appendChild(el("div", { class: "item__note" }, occ.note));
   card.appendChild(body);
 
   const actionsRow = el("div", { class: "item__actions" });

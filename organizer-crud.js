@@ -34,6 +34,7 @@
    ============================================================ */
 
 import { openOrganizerDB } from "./organizer-db.js";
+import { validateExtraFields, assertEndAfterStart } from "./organizer-model.js";
 
 const OCCURRENCES_STORE = "occurrences";
 const STORED_STATUSES = new Set(["upcoming", "completed", "not_completed"]);
@@ -57,6 +58,9 @@ function assertRequiredFieldsForCreate(record) {
     throw new Error("organizer_missing_title: title حقل إلزامي (الحد الأدنى لأي عنصر)");
   }
   assertValidStatus(record.status);
+  // Foundation v2: التحقق من الحقول الجديدة عند الكتابة فقط (السجلات القديمة لا تُفحص عند القراءة).
+  validateExtraFields(record);
+  assertEndAfterStart(record.time, record.endTime);
 }
 
 /** إنشاء حدوث جديد. يفشل صراحة إذا كان occ_key موجودًا مسبقًا. */
@@ -111,6 +115,7 @@ export async function updateOccurrence(occ_key, changes, { allowRootIdChange = f
     throw new Error("organizer_root_id_protected: تغيير root_id عبر update() يتطلب allowRootIdChange صراحة");
   }
   assertValidStatus(changes && changes.status);
+  validateExtraFields(changes); // يفحص فقط الحقول المذكورة في changes
 
   const db = await openOrganizerDB();
   return new Promise((resolve, reject) => {
@@ -124,6 +129,11 @@ export async function updateOccurrence(occ_key, changes, { allowRootIdChange = f
         return;
       }
       const merged = { ...existing, ...changes, occ_key: existing.occ_key };
+      // علاقة البداية/النهاية تُفحص فقط إذا لمس هذا التحديث time أو endTime (لا نُسقط تحديث status لسجل قديم).
+      if (changes && (Object.prototype.hasOwnProperty.call(changes, "endTime") ||
+                      Object.prototype.hasOwnProperty.call(changes, "time"))) {
+        try { assertEndAfterStart(merged.time, merged.endTime); } catch (e) { reject(e); return; }
+      }
       const putReq = store.put(merged);
       putReq.onsuccess = () => resolve(merged);
       putReq.onerror = () => reject(putReq.error);

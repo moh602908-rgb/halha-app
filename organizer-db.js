@@ -20,7 +20,8 @@
    ============================================================ */
 
 const ORGANIZER_DB_NAME = "dallini-organizer";
-const ORGANIZER_DB_VERSION = 1;
+const ORGANIZER_DB_VERSION = 2;
+const BLOCKED_UPGRADE_TIMEOUT_MS = 8000;
 const OCCURRENCES_STORE = "occurrences";
 
 /**
@@ -37,26 +38,52 @@ export function openOrganizerDB() {
 
     const request = indexedDB.open(ORGANIZER_DB_NAME, ORGANIZER_DB_VERSION);
 
+    let blockedTimer = null;
+
     request.onupgradeneeded = (event) => {
       const db = event.target.result;
+      const tx = event.target.transaction;
 
-      if (!db.objectStoreNames.contains(OCCURRENCES_STORE)) {
-        // occ_key هو المفتاح الأساسي — فريد لكل حدوث فردي (Phase 1/2).
-        const store = db.createObjectStore(OCCURRENCES_STORE, { keyPath: "occ_key" });
+      // v0 -> v1: إنشاء المخزن والفهرسين الأصليين (بلا أي تغيير في المعنى).
+      const store = db.objectStoreNames.contains(OCCURRENCES_STORE)
+        ? tx.objectStore(OCCURRENCES_STORE)
+        : db.createObjectStore(OCCURRENCES_STORE, { keyPath: "occ_key" });
+      const ensure = (name, keyPath) => {
+        if (!store.indexNames.contains(name)) store.createIndex(name, keyPath, { unique: false });
+      };
+      // occ_key هو المفتاح الأساسي؛ root_id: كل حدوثات السلسلة؛ status: تجميع Today.
+      ensure("root_id_idx", "root_id");
+      ensure("status_idx", "status");
 
-        // فهرس root_id: ضروري لإيجاد كل حدوثات نفس السلسلة (لعمليات
-        // مثل Series Split وseries_end)، دون علاقة بمنطق تنفيذها هنا.
-        store.createIndex("root_id_idx", "root_id", { unique: false });
-
-        // فهرس status: ضروري لاحقًا لاستعلام Today (Missed/Upcoming/
-        // Completed) دون تحميل كل السجلات — لا منطق ترتيب هنا، فقط
-        // البنية التي تُمكّن الاستعلام لاحقًا.
-        store.createIndex("status_idx", "status", { unique: false });
-      }
+      // v1 -> v2 (Foundation): فهارس فقط، بلا إعادة كتابة أي سجل موجود.
+      // السجلات القديمة تبقى كما هي؛ غياب الحقول الجديدة (domain/priority/note/space_id/endTime) = "غير محدد".
+      // الفهارس تُبنى تلقائيًا من السجلات الموجودة؛ السجلات التي لا تحوي المسار لا تُفهرس.
+      ensure("date_idx", "date");
+      ensure("postpone_date_idx", "postpone.date"); // التاريخ الفعلي بعد التأجيل
+      ensure("override_date_idx", "override.date"); // التاريخ الفعلي بعد تحرير التاريخ
+      ensure("domain_idx", "domain");
+      ensure("space_idx", "space_id");
     };
 
-    request.onsuccess = (event) => resolve(event.target.result);
-    request.onerror = (event) => reject(event.target.error);
+    // ترقية محجوبة: تبويب قديم ما زال يحمل اتصال v1. لا نتعلق للأبد.
+    request.onblocked = () => {
+      blockedTimer = setTimeout(
+        () => reject(new Error("organizer_db_blocked: ترقية القاعدة محجوبة؛ أغلق نوافذ التطبيق الأخرى ثم أعد المحاولة")),
+        BLOCKED_UPGRADE_TIMEOUT_MS
+      );
+    };
+
+    request.onsuccess = (event) => {
+      if (blockedTimer) clearTimeout(blockedTimer);
+      const db = event.target.result;
+      // لا نحجب ترقية مستقبلية من تبويب آخر: نغلق الاتصال عند طلب تغيير الإصدار.
+      db.onversionchange = () => db.close();
+      resolve(db);
+    };
+    request.onerror = (event) => {
+      if (blockedTimer) clearTimeout(blockedTimer);
+      reject(event.target.error);
+    };
   });
 }
 
@@ -75,6 +102,8 @@ export function openOrganizerDB() {
  *   series_end: string | null,  // إغلاق ناعم للسلسلة (Technical Decision — Delete/Edit)
  *   recurrence: object | null,  // بنية داخلية غير محسومة بعد — placeholder فقط
  *   override:   object | null   // بنية داخلية غير محسومة بعد — placeholder فقط
+ *   // v2 (اختيارية؛ غيابها = غير محدد — انظر organizer-model.js):
+ *   endTime: "HH:MM", domain: string(slug), priority: "low"|"normal"|"high", note: string, space_id: string
  * }
  */
 export const OCCURRENCE_RECORD_SHAPE_NOTE =

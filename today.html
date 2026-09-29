@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="theme-color" content="#12377D" />
+<link rel="manifest" href="manifest.json" />
 <title>اليوم — دلّني AI</title>
 <style>
   /*
@@ -131,6 +133,10 @@
   .item__body { flex: 1; min-width: 0; }
   .item__title { font-size: 14.5px; font-weight: 600; word-break: break-word; }
   .item__time { font-size: 12.5px; color: var(--ink-soft); margin-top: 2px; }
+  .item__meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+  .item__chip { font-size: 11.5px; padding: 1px 8px; border-radius: 999px; background: var(--bg); border: 1px solid var(--border); color: var(--ink-soft); }
+  .item__chip--high { color: var(--urgent); border-color: var(--urgent); }
+  .item__note { font-size: 12.5px; color: var(--ink-soft); margin-top: 4px; white-space: pre-wrap; word-break: break-word; }
   .item__actions { display: flex; flex-wrap: wrap; gap: 6px; margin-inline-start: auto; justify-content: flex-end; }
 
   .custom-postpone { position: relative; }
@@ -167,5 +173,13 @@
   </div>
   <div id="today-toast" role="status" aria-live="polite"></div>
   <script type="module" src="./today-ui.js"></script>
+  <script>
+    // تسجيل نفس Service Worker (sw.js) حتى تعمل "التحميل الأول ← التخزين ← Offline" حتى لو فُتحت هذه الصفحة أولًا.
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(function () {});
+      });
+    }
+  </script>
 </body>
 </html>

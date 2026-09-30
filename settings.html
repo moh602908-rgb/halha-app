@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#12377D" />
+<link rel="manifest" href="manifest.json" />
+<title>الإعدادات — دلّني AI</title>
+<style>
+  :root { box-sizing: border-box; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px);
+    --bg: #f4f5f8; --card: #ffffff; --ink: #14213d; --ink-soft: #5b6478; --border: #e3e6ee; --accent: #12377D; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #101522; --card: #171d2c; --ink: #eef1f8; --ink-soft: #9aa3b8; --border: #232a3d; } }
+  :root[data-theme="dark"] { --bg: #101522; --card: #171d2c; --ink: #eef1f8; --ink-soft: #9aa3b8; --border: #232a3d; }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: "Segoe UI", Tahoma, sans-serif; direction: rtl; }
+  #settings-root { max-width: 480px; margin: 0 auto; padding: 20px 16px 48px; }
+  .page-title { font-size: 20px; margin: 8px 0 20px; }
+  .back-link { color: var(--accent); text-decoration: none; font-size: 14px; display: inline-block; margin-bottom: 4px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px; margin-bottom: 14px; }
+  .field-label { font-size: 13.5px; color: var(--ink-soft); margin-bottom: 6px; display: block; }
+  .input { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); font-size: 15px; background: var(--card); color: var(--ink); }
+  .row { display: flex; align-items: center; justify-content: space-between; padding: 6px 2px; }
+  .hint { font-size: 12px; color: var(--ink-soft); margin-top: 6px; }
+  .btn { padding: 9px 16px; border-radius: 10px; border: none; background: var(--accent); color: #fff; font-size: 14px; cursor: pointer; }
+  .toast { font-size: 12.5px; color: #1a7f37; margin-top: 8px; min-height: 16px; }
+  .toast--error { color: #b42318; }
+</style>
+</head>
+<body>
+  <div id="settings-root"></div>
+  <script type="module" src="./settings-ui.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(function () {});
+      });
+    }
+  </script>
+</body>
+</html>

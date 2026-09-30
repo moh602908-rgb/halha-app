@@ -3,7 +3,7 @@
    وإلا فلن يكتشف المتصفح وجود نسخة جديدة، وستبقى النسخة القديمة معروضة
    للمستخدمين رغم نجاح الرفع على GitHub وVercel. */
 
-const APP_VERSION = "v2.3.0";
+const APP_VERSION = "v2.4.0";
 const CACHE_NAME = `dallini-cache-${APP_VERSION}`;
 
 const FILES_TO_CACHE = [
@@ -31,7 +31,20 @@ const FILES_TO_CACHE = [
   "./organizer-series-stop.js",
   "./organizer-postpone.js",
   "./organizer-selection.js",
-  "./organizer-today.js"
+  "./organizer-today.js",
+  // Time System (الحزمة 2): بلا مساس بملفات Foundation أعلاه
+  "./time.html",
+  "./time-ui.js",
+  "./settings.html",
+  "./settings-ui.js",
+  "./organizer-timedb.js",
+  "./organizer-settings.js",
+  "./organizer-time.js",
+  "./organizer-exporter.js",
+  "./organizer-voice.js",
+  "./voice-tts-web.js",
+  "./organizer-week.js",
+  "./organizer-domains.js"
 ];
 
 self.addEventListener("install", (event) => {
@@ -117,5 +130,16 @@ self.addEventListener("fetch", (event) => {
         }
         return Response.error();
       })
+  );
+});
+
+// Time System (الحزمة 2): عرض إشعار نصي فقط عند طلب الصفحة (voice-tts-web.js)، أثناء عملها فقط.
+// لا speechSynthesis هنا إطلاقًا (غير متاحة من SW أصلًا)، ولا Push API (بلا خادم في هذا التطبيق).
+self.addEventListener("message", (event) => {
+  const data = event.data;
+  if (!data || data.type !== "organizer_show_reminder_notification") return;
+  if (!self.registration || !self.registration.showNotification) return;
+  event.waitUntil(
+    self.registration.showNotification(data.title || "تذكير", { tag: data.tag, body: "مرافق دلّني" }).catch(() => {})
   );
 });

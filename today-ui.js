@@ -347,6 +347,11 @@ async function renderApp() {
   const view = await loadTodayView(now);
 
   root.innerHTML = "";
+  const nav = el("div", { class: "nav-links" },
+    el("a", { href: "time.html" }, "منظومة الوقت"),
+    el("a", { href: "settings.html" }, "الإعدادات")
+  );
+  root.appendChild(nav);
   const header = el("header", { class: "today-header" });
   header.appendChild(el("h1", { class: "today-header__date" }, arabicDayTitle(now)));
   header.appendChild(renderAddButton());
@@ -369,6 +374,9 @@ async function renderApp() {
 function boot() {
   renderApp();
   setInterval(renderApp, REFRESH_INTERVAL_MS);
+  // حلقة التذكير الصوتي: تعمل فقط والصفحة مفتوحة (قيد speechSynthesis في المتصفح). استيراد ديناميكي
+  // حتى لا تنكسر Today لو تعذّر تحميل ملفات Time System لأي سبب (عزل الفشل، لا اعتمادية صلبة).
+  import("./voice-tts-web.js").then((m) => m.startVoiceReminderLoop()).catch(() => {});
 }
 
 if (document.readyState === "loading") {

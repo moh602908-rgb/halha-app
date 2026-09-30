@@ -29,6 +29,8 @@ import { createRecurringSeries } from "./organizer-recurrence.js";
 import {
   KNOWN_DOMAINS, DOMAIN_LABELS_AR, PRIORITIES, PRIORITY_LABELS_AR, NOTE_MAX_LENGTH, pickExtraFields,
 } from "./organizer-model.js";
+import { getDomainTemplate } from "./organizer-domains.js";
+import { createReminder } from "./organizer-time.js";
 
 const TITLE_MAX = 200; // البند 3: "حد أقصى معقول (تفصيل تنفيذي لاحق)" — قيمة تنفيذية مبدئية، سهل تعديلها هنا فقط
 const WEEKDAYS = [
@@ -90,6 +92,12 @@ export function buildAddModal({ onCreated, onCancel }) {
     el("option", { value: "" }, "بدون مجال"),
     ...KNOWN_DOMAINS.map((d) => el("option", { value: d }, DOMAIN_LABELS_AR[d]))
   );
+  // Time System integration: تلميح مأخوذ من قالب المجال (organizer-domains.js)؛ عرض فقط، لا يغيّر التخزين.
+  const domainHint = el("div", { class: "form-hint" });
+  domainSelect.addEventListener("change", () => {
+    const tpl = getDomainTemplate(domainSelect.value);
+    domainHint.textContent = tpl ? tpl.hint : "";
+  });
   const prioritySelect = el(
     "select", { class: "input" },
     el("option", { value: "" }, "بدون أولوية"),
@@ -98,6 +106,10 @@ export function buildAddModal({ onCreated, onCancel }) {
   const noteInput = el("textarea", {
     class: "input", rows: "2", maxlength: String(NOTE_MAX_LENGTH), placeholder: "ملاحظة (اختياري)",
   });
+
+  // Time System integration: تذكير مرتبط بالعنصر (organizer-time.js)، اختياري، مستقل عن occurrence نفسه.
+  const reminderOffsetInput = el("input", { class: "input", type: "number", min: "0", placeholder: "تذكير قبل الموعد بـ (دقائق، اختياري)" });
+  const reminderVoiceCheckbox = el("input", { type: "checkbox" });
 
   // مفتاح تذكير⟷موعد — يظهر فقط عند وقت واحد بلا نهاية (البند 5)
   const reminderRadio = el("input", { type: "radio", name: "kind", value: "reminder", checked: "checked" });
@@ -201,12 +213,14 @@ export function buildAddModal({ onCreated, onCancel }) {
     const recType = recurrenceSelect.value;
     saveBtn.disabled = true;
     try {
+      let createdOccKey = null;
       if (recType === "none") {
         const rec = { occ_key: newId(), title, itemType, date, time, status: "upcoming" };
         rec.root_id = rec.occ_key;
         Object.assign(rec, extras);
         if (endTime) rec.endTime = endTime;
         await createOccurrence(rec);
+        createdOccKey = rec.occ_key;
       } else {
         let recurrence;
         if (recType === "daily") {
@@ -218,7 +232,16 @@ export function buildAddModal({ onCreated, onCancel }) {
         } else {
           recurrence = { type: "monthly", anchor_day: new Date(`${date}T00:00:00`).getDate(), interval: 1 };
         }
-        await createRecurringSeries({ root_id: newId(), title, itemType, time, date, recurrence, endTime, ...extras });
+        const rootId = newId();
+        await createRecurringSeries({ root_id: rootId, title, itemType, time, date, recurrence, endTime, ...extras });
+        createdOccKey = rootId; // التذكير يُربط بالحدوث الأول (الجذر)؛ حدوثات السلسلة اللاحقة لا تُربط تلقائيًا في V1.
+      }
+      // تذكير اختياري مرتبط بالعنصر المُنشأ. فشل إنشاء التذكير لا يُبطل الموعد نفسه (occurrence هو مصدر الحقيقة الأساسي).
+      const offset = Number(reminderOffsetInput.value);
+      if (createdOccKey && time && Number.isFinite(offset) && offset >= 0 && reminderOffsetInput.value !== "") {
+        try {
+          await createReminder({ title, occ_key: createdOccKey, fire_offset_min: offset, voice_enabled: reminderVoiceCheckbox.checked });
+        } catch (_) { /* تُترك بصمت: العنصر نفسه أُنشئ بنجاح بالفعل */ }
       }
       onCreated();
     } catch (err) {
@@ -245,6 +268,13 @@ export function buildAddModal({ onCreated, onCancel }) {
     )
   );
   card.appendChild(el("label", { class: "form-label" }, "ملاحظة", noteInput));
+  card.appendChild(domainHint);
+  card.appendChild(
+    el("div", { class: "form-row" },
+      el("label", { class: "form-label" }, "", reminderOffsetInput),
+      el("label", { class: "form-label form-label--inline" }, reminderVoiceCheckbox, " تفعيل الصوت لهذا التذكير")
+    )
+  );
   card.appendChild(typeHint);
   card.appendChild(kindRow);
   card.appendChild(el("label", { class: "form-label" }, "التكرار", recurrenceSelect));

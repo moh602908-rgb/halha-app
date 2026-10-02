@@ -14,9 +14,7 @@
   * { box-sizing: border-box; }
   html, body { height: 100%; }
   body { margin: 0; background: var(--bg); color: var(--ink); font-family: "Segoe UI", Tahoma, sans-serif; direction: rtl; }
-  #time-root { max-width: 520px; margin: 0 auto; padding: 20px 16px 48px; }
-  .page-title { font-size: 20px; margin: 8px 0 18px; }
-  .back-link { color: var(--accent); text-decoration: none; font-size: 14px; display: inline-block; margin-bottom: 4px; }
+  #time-root { max-width: 600px; margin: 0 auto; padding: 0 16px 48px; }
   .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px; margin-bottom: 14px; }
   .section-title { font-size: 15px; margin: 0 0 10px; color: var(--ink); }
   .item-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
@@ -26,11 +24,16 @@
   .form-row { display: flex; gap: 8px; margin-top: 10px; align-items: center; }
   .btn { padding: 8px 14px; border-radius: 10px; border: none; background: var(--accent); color: #fff; font-size: 13.5px; cursor: pointer; white-space: nowrap; }
   .btn--ghost { background: transparent; color: var(--accent); border: 1px solid var(--border); }
-  .actions { display: flex; gap: 6px; }
+  .actions { display: flex; gap: 6px; align-items: center; }
+  .check-line { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
+  #notif-card[data-permission-state="granted"] [data-role="perm-badge"] { color: #1a7f37; }
+  #notif-card[data-permission-state="denied"] [data-role="perm-badge"] { color: #b42318; }
 </style>
 </head>
 <body>
+  <div id="app-header" data-page="time"></div>
   <div id="time-root"></div>
+  <script type="module" src="./app-header.js"></script>
   <script type="module" src="./time-ui.js"></script>
   <script>
     if ('serviceWorker' in navigator) {

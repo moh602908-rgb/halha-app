@@ -1,55 +1,93 @@
 /* ============================================================
    voice-tts-web.js — طبقة التنفيذ في الصفحة (فورجراوند): صوت + إشعار
    ============================================================
-   يعمل فقط والصفحة مفتوحة. لكن السببين مختلفان تقنيًا، وهذا فرق مهم
-   وليس تفصيلًا لفظيًا (تحقّق مسجَّل، لا افتراض):
+   يعمل فقط والصفحة مفتوحة (حتى لو في الخلفية ضمن المتصفح، مع احتمال تأخير/تجميد من المتصفح).
+   لا يعمل بعد إغلاق الصفحة. السببان مختلفان تقنيًا (تحقّق مسجَّل، لا افتراض):
 
-   1) الصوت (speechSynthesis): قيد صارم في واجهة المتصفح نفسها، لا حل
-      بديل له على الويب مطلقًا. الواجهة معرَّفة فقط على Window، وغير
-      موجودة إطلاقًا في ServiceWorkerGlobalScope — فحتى لو أعدنا كتابة
-      هذا الملف بالكامل ليعمل من داخل sw.js، السطر الذي يستدعي
-      speechSynthesis سيفشل فورًا لأن الكائن غير موجود هناك أصلًا.
+   1) الصوت (speechSynthesis): قيد صارم في واجهة المتصفح نفسها؛ الواجهة معرَّفة على Window فقط
+      وغير موجودة في ServiceWorkerGlobalScope، فلا بديل ويب لها.
 
-   2) الإشعار النصي (self.registration.showNotification): هذه بذاتها
-      **لا** تحتاج صفحة مفتوحة، وتعمل من داخل Service Worker بمفرده —
-      هذا بالضبط أساس عمل إشعارات Push على الويب (صفحة مغلقة تمامًا،
-      وحدث push يوقظ الـSW، فيستدعي showNotification بنجاح). القيد هنا
-      ليس في الدالة نفسها، بل في آلية إطلاقنا الفعلية: sw.js (مستمعاته
-      الأربعة فقط install/activate/fetch/message — لا push ولا
-      periodicsync) لا يستدعي showNotification إلا داخل مستمع
-      "message"، وهذا المستمع لا يُستثار إلا بـpostMessage صريح يصل من
-      صفحة حيّة. المُرسِل الوحيد لهذه الرسالة هو دالة notify() أدناه،
-      المستدعاة من tick() المُشغَّلة بـsetInterval على الصفحة نفسها
-      (startVoiceReminderLoop، أسفل هذا الملف) — فإغلاق التبويب يوقف
-      هذا الـsetInterval فورًا، فلا يُرسَل postMessage، فلا يستيقظ
-      sw.js، فلا يُستدعى showNotification، رغم أن الدالة قادرة تقنيًا
-      على العمل بمفردها لو وُجد محفِّز مستقل عن الصفحة.
+   2) الإشعار النصي (self.registration.showNotification): هذه بذاتها لا تحتاج صفحة مفتوحة،
+      لكن محفِّزنا الوحيد (tick المُشغَّل بـsetInterval على الصفحة → postMessage → sw.js) يموت بإغلاق الصفحة.
+      لا push (يحتاج خادمًا، وهذا التطبيق بلا خادم بقرار صريح) ولا periodicsync (دعم ضيق وشروط صارمة).
+      فالإشعار أيضًا لا يُطلق بعد إغلاق الصفحة — ليس لقيد في showNotification بل لغياب محفِّز مستقل عن الصفحة.
+      سدّ هذه الفجوة بموثوقية (AlarmManager + TTS أصلي) هو مبرر طبقة Android لاحقًا، لا حل ويب صادق له.
 
-   لذلك، في البنية الحالية، الإشعار أيضًا لا يُطلق بعد إغلاق الصفحة —
-   ليس بسبب قيد في showNotification ذاتها، بل لأنه لا يوجد حاليًا
-   محفِّز مستقل عن الصفحة (push يحتاج خادمًا يرسل للـSW حتى والصفحة
-   مغلقة، وهذا التطبيق بلا خادم ولا تخزين خادم لمحتوى المستخدم بقرار
-   صريح؛ periodicsync دعمه في المتصفحات ضيق جدًا ويحتاج شروط تفاعل
-   صارمة، فلم يُعتمد الآن). النتيجة العملية لهذا الفارق: الإشعار (حين
-   يُطلق فعلًا) يبقى ظاهرًا في تراي النظام حتى لو أُغلق التبويب بعد
-   لحظة postMessage مباشرة — بخلاف الصوت الذي ينقطع فور إغلاق الصفحة —
-   لكن كلاهما يتطلب صفحة مفتوحة *لحظة* الإطلاق نفسها. سدّ هذه الفجوة
-   فعليًا (رنين موثوق بعد إغلاق التطبيق تمامًا) هو بالضبط ما تبرره
-   طبقة Android لاحقًا (AlarmManager + TTS أصلي)، لا حل ويب صادق له.
+   الفصل Free/Premium هنا:
+   - Free: الإشعار النصي الأساسي (عنوان العنصر + نص عام بلا اسم المستخدم) + البانر داخل الصفحة. لا يمرّ من buildVoiceText.
+   - Premium: الصوت الذكي فقط، ونقطة التحكم الوحيدة فيه buildVoiceText() (organizer-voice.js).
 
-   setInterval هنا للعرض/الفحص الدوري فقط على الصفحة، وليس مصدر الحقيقة:
-   كل قرار "هل حان الوقت؟" يقارن fire_at المطلق (من organizer-exporter.js)
-   بـDate.now() في كل دورة، فإغلاق التبويب وإعادة فتحه لا يفقد أي حدث
-   ضمن نافذة الفحص.
+   قرار "هل حان الوقت؟" يأتي من listDueEvents() (organizer-exporter.js) وفق سياسة الفائت، لا من نافذة قصيرة:
+   timestamps مطلقة، والحجز الذرّي claimFiring/claimSnoozeFire يمنع التكرار (حتى مع إعادة تحميل الصفحة أو تبويبين).
+   Page Visibility: عند عودة الصفحة للظهور (visibilitychange/pageshow/focus) يُجرى tick فورًا.
    لا fetch، لا استيراد لـ app.js/ask.js/prompt.js/api/.
    ============================================================ */
 
-import { listUpcomingEvents, getVoiceTextForEvent } from "./organizer-exporter.js";
-import { markFired } from "./organizer-time.js";
+import { listDueEvents, getVoiceTextForEvent } from "./organizer-exporter.js";
+import { markFired, claimFiring, claimSnoozeFire, sweepStaleState } from "./organizer-time.js";
 
 const POLL_INTERVAL_MS = 5000;
-const LOOKAHEAD_MS = 60 * 1000; // نافذة فحص قصيرة: نبحث دائمًا عمّا "حان وقته الآن أو خلال دقيقة"
-const FIREABLE_KINDS = Object.freeze(["reminder", "timer", "countdown"]); // alarm يتكرر، لا "ينتهي" بذاته
+const FINISH_KINDS = Object.freeze(["reminder", "timer", "countdown"]); // alarm المتكرر لا "ينتهي" بذاته
+export const FIRED_EVENT_NAME = "dallini:time-fired";
+export const NOTIFICATION_MESSAGE_TYPE = "organizer_show_reminder_notification";
+
+/** نص الإشعار الأساسي (Free): عام بحسب النوع، بلا اسم المستخدم إطلاقًا. */
+const NOTIFICATION_BODY_BY_KIND = Object.freeze({
+  alarm: "منبّه",
+  reminder: "تذكير",
+  timer: "انتهى المؤقت",
+  countdown: "انتهى العدّ التنازلي",
+});
+
+/* ================= حالة إذن الإشعارات ================= */
+
+/** granted | default | denied | unsupported (عدم دعم Notification أو Service Worker = unsupported). */
+export function getNotificationPermissionState(env = globalThis) {
+  const N = env && env.Notification;
+  const nav = env && env.navigator;
+  if (!N || !nav || !("serviceWorker" in nav)) return "unsupported";
+  const p = N.permission;
+  return p === "granted" || p === "denied" || p === "default" ? p : "unsupported";
+}
+
+/**
+ * يطلب الإذن — يجب أن تُستدعى من معالج نقرة المستخدم فقط (زر واضح). لا تُستدعى تلقائيًا في أي مكان.
+ * لا تطلب إلا عندما تكون الحالة default (denied لا يمكن إعادة طلبها برمجيًا).
+ */
+export async function requestNotificationPermission(env = globalThis) {
+  if (getNotificationPermissionState(env) !== "default") return getNotificationPermissionState(env);
+  try {
+    await new Promise((resolve) => {
+      const r = env.Notification.requestPermission(resolve); // صيغة الاستدعاء القديمة
+      if (r && typeof r.then === "function") r.then(resolve, resolve); // الصيغة الحديثة (Promise)
+    });
+  } catch { /* نعيد الحالة الفعلية أدناه */ }
+  return getNotificationPermissionState(env);
+}
+
+/** مؤشر حي: يستدعي onChange(state) فورًا ثم عند أي تغيّر (permissions.onchange + عودة الصفحة + فحص دوري خفيف). */
+export function watchNotificationPermission(onChange, env = globalThis, { pollMs = 3000 } = {}) {
+  let last = getNotificationPermissionState(env);
+  const check = () => { const s = getNotificationPermissionState(env); if (s !== last) { last = s; onChange(s); } };
+  onChange(last);
+  let permStatus = null;
+  try {
+    const q = env.navigator && env.navigator.permissions && env.navigator.permissions.query({ name: "notifications" });
+    if (q && q.then) q.then((p) => { permStatus = p; p.addEventListener("change", check); }).catch(() => {});
+  } catch { /* بعض المتصفحات لا تدعم الاستعلام */ }
+  const doc = env.document, win = env.window || env;
+  if (doc && doc.addEventListener) doc.addEventListener("visibilitychange", check);
+  if (win && win.addEventListener) win.addEventListener("focus", check);
+  const timer = setInterval(check, pollMs);
+  return () => {
+    clearInterval(timer);
+    if (doc && doc.removeEventListener) doc.removeEventListener("visibilitychange", check);
+    if (win && win.removeEventListener) win.removeEventListener("focus", check);
+    if (permStatus) permStatus.removeEventListener("change", check);
+  };
+}
+
+/* ================= الصوت والإشعار ================= */
 
 /** تشغيل نطق نص عبر speechSynthesis المحلي؛ لا شبكة، لا تخزين صوت. */
 function speak(text) {
@@ -60,49 +98,89 @@ function speak(text) {
   return true;
 }
 
-/** طلب عرض إشعار نصي عبر sw.js (يعمل بلا صوت هناك دائمًا). بلا أثر إن لم يوجد SW نشط. */
-function notify(title, eventId) {
-  if (typeof navigator === "undefined" || !navigator.serviceWorker || !navigator.serviceWorker.controller) return false;
-  navigator.serviceWorker.controller.postMessage({ type: "organizer_show_reminder_notification", title, tag: eventId });
+/**
+ * طلب عرض إشعار نصي عبر sw.js (message → SW → showNotification). لا يُرسَل شيء إلا إذا كان الإذن granted.
+ * الحمولة: عنوان العنصر + نص عام حسب النوع + tag=event_id. لا display_name إطلاقًا (Free).
+ */
+export async function notify(event, env = globalThis) {
+  if (getNotificationPermissionState(env) !== "granted") return false;
+  const sw = env.navigator.serviceWorker;
+  let target = sw.controller;
+  if (!target) {
+    try { const reg = await sw.getRegistration(); target = reg && reg.active; } catch { /* لا SW نشط */ }
+  }
+  if (!target) return false;
+  target.postMessage({
+    type: NOTIFICATION_MESSAGE_TYPE,
+    title: event.title,
+    tag: event.event_id,
+    body: NOTIFICATION_BODY_BY_KIND[event.entity_kind] || "تذكير",
+  });
   return true;
 }
 
+function defaultOnFired(e) {
+  if (typeof window !== "undefined" && typeof CustomEvent !== "undefined") {
+    window.dispatchEvent(new CustomEvent(FIRED_EVENT_NAME, { detail: e }));
+  }
+}
+
 /**
- * يبدأ الحلقة الدورية. يعيد دالة إيقاف (لتفكيك المستمع عند إغلاق الصفحة/الاختبار).
- * handledThisSession: ذاكرة صفحة بسيطة (لا تخزين) لمنع معالجة نفس event_id مرتين في نفس الجلسة —
- * آمنة لأن event_id حتمي: إعادة تشغيل الصفحة تعيد بناء الذاكرة، وأي حدث لم يُعلَّم منتهيًا فعليًا
- * (لم يُستدعَ markFired له) سيظل يظهر من Exporter فيُعاد التعامل معه، وهذا هو السلوك الصحيح.
+ * فحص واحد لما استحق الآن (يُستدعى من الحلقة، ومباشرةً في الاختبارات). يعيد الأحداث التي أُطلقت فعليًا.
+ * الحجز الذرّي قبل أي أثر جانبي (صوت/إشعار): أول من يحجز ينفّذ، وغيره يتخطى — فتكرار tick لا يكرر الإطلاق.
  */
-export function startVoiceReminderLoop({ speakFn = speak, notifyFn = notify } = {}) {
-  const handledThisSession = new Set();
+export async function runDueCheck({ speakFn = speak, notifyFn = notify, onFired = defaultOnFired, now = new Date() } = {}) {
+  const nowMs = now instanceof Date ? now.getTime() : Number(now);
+  const fired = [];
+  try { await sweepStaleState(nowMs); } catch { /* التنظيف لا يمنع الإطلاق */ }
+  const events = await listDueEvents(new Date(nowMs));
+  for (const e of events) {
+    const won = e.snooze
+      ? await claimSnoozeFire(e.entity_id, Date.parse(e.fire_at), { now: nowMs })
+      : await claimFiring(e.entity_id, e.event_id, { now: nowMs, finish: e.entity_kind === "alarm" && !e.recurrence_rule });
+    if (!won) continue;
+
+    if (e.voice_eligible) {
+      try { const text = await getVoiceTextForEvent(e); if (text) speakFn(text); } catch { /* الصوت إضافة؛ لا يكسر الإشعار */ }
+    }
+    try { await notifyFn(e); } catch { /* الإشعار لا يكسر الحلقة */ }
+    if (!e.snooze && FINISH_KINDS.includes(e.entity_kind)) {
+      try { await markFired(e.entity_id); } catch { /* لا نكسر الحلقة لأجل خطأ تعليم فردي */ }
+    }
+    fired.push(e);
+    try { onFired(e); } catch { /* مستمع الواجهة لا يكسر الحلقة */ }
+  }
+  return fired;
+}
+
+/**
+ * يبدأ الحلقة الدورية. يعيد دالة إيقاف (لتفكيك المؤقت والمستمعين عند إغلاق الصفحة/الاختبار).
+ * setInterval للفحص فقط وليس مصدر الحقيقة؛ Page Visibility: tick فور عودة الصفحة.
+ */
+export function startVoiceReminderLoop({ speakFn, notifyFn, onFired, pollMs = POLL_INTERVAL_MS, env = globalThis } = {}) {
   let stopped = false;
+  let inFlight = false;
+  const opts = {};
+  if (speakFn) opts.speakFn = speakFn;
+  if (notifyFn) opts.notifyFn = notifyFn;
+  if (onFired) opts.onFired = onFired;
 
   async function tick() {
-    if (stopped) return;
-    try {
-      const now = new Date();
-      const events = await listUpcomingEvents(new Date(now.getTime() - POLL_INTERVAL_MS), new Date(now.getTime() + LOOKAHEAD_MS));
-      for (const e of events) {
-        if (handledThisSession.has(e.event_id)) continue;
-        if (new Date(e.fire_at).getTime() > now.getTime()) continue; // لم يحن وقته فعليًا بعد
-        handledThisSession.add(e.event_id);
-
-        if (e.voice_eligible) {
-          // eslint-disable-next-line no-await-in-loop
-          const text = await getVoiceTextForEvent(e);
-          if (text) speakFn(text);
-        }
-        notifyFn(e.title, e.event_id);
-
-        if (FIREABLE_KINDS.includes(e.entity_kind)) {
-          // eslint-disable-next-line no-await-in-loop
-          try { await markFired(e.entity_id); } catch { /* لا نكسر الحلقة لأجل خطأ تعليم فردي */ }
-        }
-      }
-    } catch { /* لا نكسر الحلقة الدورية لأجل خطأ نداء واحد؛ المحاولة التالية تلتقط الحدث نفسه (event_id ثابت) */ }
+    if (stopped || inFlight) return;
+    inFlight = true;
+    try { await runDueCheck({ ...opts, now: new Date() }); } catch { /* المحاولة التالية تلتقط الحدث نفسه */ }
+    finally { inFlight = false; }
   }
 
-  const timer = setInterval(tick, POLL_INTERVAL_MS);
+  const doc = env.document, win = env.window || env;
+  const onVisible = () => { if (!doc || !doc.hidden) tick(); };
+  const timer = setInterval(tick, pollMs);
+  if (doc && doc.addEventListener) doc.addEventListener("visibilitychange", onVisible);
+  if (win && win.addEventListener) { win.addEventListener("pageshow", onVisible); win.addEventListener("focus", onVisible); }
   tick(); // فحص فوري عند البدء، لا انتظار أول دورة
-  return () => { stopped = true; clearInterval(timer); };
+  return () => {
+    stopped = true; clearInterval(timer);
+    if (doc && doc.removeEventListener) doc.removeEventListener("visibilitychange", onVisible);
+    if (win && win.removeEventListener) { win.removeEventListener("pageshow", onVisible); win.removeEventListener("focus", onVisible); }
+  };
 }

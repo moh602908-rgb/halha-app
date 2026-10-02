@@ -14,9 +14,7 @@
   * { box-sizing: border-box; }
   html, body { height: 100%; }
   body { margin: 0; background: var(--bg); color: var(--ink); font-family: "Segoe UI", Tahoma, sans-serif; direction: rtl; }
-  #settings-root { max-width: 480px; margin: 0 auto; padding: 20px 16px 48px; }
-  .page-title { font-size: 20px; margin: 8px 0 20px; }
-  .back-link { color: var(--accent); text-decoration: none; font-size: 14px; display: inline-block; margin-bottom: 4px; }
+  #settings-root { max-width: 600px; margin: 0 auto; padding: 0 16px 48px; }
   .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px; margin-bottom: 14px; }
   .field-label { font-size: 13.5px; color: var(--ink-soft); margin-bottom: 6px; display: block; }
   .input { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); font-size: 15px; background: var(--card); color: var(--ink); }
@@ -25,10 +23,17 @@
   .btn { padding: 9px 16px; border-radius: 10px; border: none; background: var(--accent); color: #fff; font-size: 14px; cursor: pointer; }
   .toast { font-size: 12.5px; color: #1a7f37; margin-top: 8px; min-height: 16px; }
   .toast--error { color: #b42318; }
+  .plan-badge { font-size: 12.5px; font-weight: 700; padding: 3px 10px; border-radius: 999px; background: rgba(18, 55, 125, 0.12); color: var(--accent); }
+  #plan-card[data-plan="premium"] .plan-badge { background: rgba(108, 76, 224, 0.16); color: #6C4CE0; }
+  .plan-col { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); }
+  .plan-col__title { font-size: 13.5px; font-weight: 700; margin-bottom: 4px; }
+  .plan-list { margin: 0; padding-inline-start: 18px; font-size: 13px; color: var(--ink-soft); line-height: 1.8; }
 </style>
 </head>
 <body>
+  <div id="app-header" data-page="settings"></div>
   <div id="settings-root"></div>
+  <script type="module" src="./app-header.js"></script>
   <script type="module" src="./settings-ui.js"></script>
   <script>
     if ('serviceWorker' in navigator) {

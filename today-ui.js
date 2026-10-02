@@ -347,13 +347,9 @@ async function renderApp() {
   const view = await loadTodayView(now);
 
   root.innerHTML = "";
-  const nav = el("div", { class: "nav-links" },
-    el("a", { href: "time.html" }, "منظومة الوقت"),
-    el("a", { href: "settings.html" }, "الإعدادات")
-  );
-  root.appendChild(nav);
-  const header = el("header", { class: "today-header" });
-  header.appendChild(el("h1", { class: "today-header__date" }, arabicDayTitle(now)));
+  // الرأس والتنقل من app-header.js (مصدر واحد). هنا سطر التاريخ + زر الإضافة فقط.
+  const header = el("div", { class: "today-header" });
+  header.appendChild(el("h2", { class: "today-header__date" }, arabicDayTitle(now)));
   header.appendChild(renderAddButton());
   root.appendChild(header);
 

@@ -3,7 +3,7 @@
    وإلا فلن يكتشف المتصفح وجود نسخة جديدة، وستبقى النسخة القديمة معروضة
    للمستخدمين رغم نجاح الرفع على GitHub وVercel. */
 
-const APP_VERSION = "v2.5.0";
+const APP_VERSION = "v2.6.0";
 const CACHE_NAME = `dallini-cache-${APP_VERSION}`;
 
 const FILES_TO_CACHE = [
@@ -47,7 +47,8 @@ const FILES_TO_CACHE = [
   "./organizer-domains.js",
   // الحزمة 3: الرأس الموحَّد وصينية الرنين (بلا أي ملف جديد خارج واجهة Time System)
   "./app-header.js",
-  "./ring-tray.js"
+  "./ring-tray.js",
+  "./alarm-tone.js"
 ];
 
 self.addEventListener("install", (event) => {

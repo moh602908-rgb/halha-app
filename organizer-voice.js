@@ -5,7 +5,7 @@
    لأي من app.js/ask.js/prompt.js/api/. مُدخلات بيانات ← نص. هذا ما يجعلها
    قابلة للنقل الحرفي إلى منطق Android (Kotlin) لاحقًا دون إعادة تصميم.
 
-   القيد: تُرجع نصًا فقط لأحداث "reminder"، وفقط عندما:
+   القيد: تُرجع نصًا فقط لأحداث "reminder" و"alarm" (المؤقت والعدّ التنازلي لا صوت لهما)، وفقط عندما:
    - settings.voice_reminders_enabled = true، و settings.premium_active = true
      (نقطة الفصل الوحيدة لـPremium؛ Time Core نفسه والإشعار الأساسي لا يمرّان من هنا إطلاقًا).
    - resolvedVoiceEnabled (تذكير محدد يتجاوز الإعداد العام، وإلا يرثه) = true.
@@ -75,6 +75,13 @@ const DOMAIN_PHRASES = Object.freeze({
   ],
 });
 
+/** قوالب المنبّه (3): المنبّه بلا مجال، فيُستعمل قالب خاص به؛ الأولوية ووقت اليوم والاسم تعمل كما للتذكير. */
+const ALARM_PHRASES = Object.freeze([
+  (t) => `حان موعد المنبّه: ${t}.`,
+  (t) => `منبّهك يرنّ الآن: ${t}.`,
+  (t) => `انتبه، المنبّه: ${t}.`,
+]);
+
 /** FNV-1a 32-bit: تجزئة حتمية بلا Math.random (نفس الإدخال ← نفس الرقم دائمًا، على أي منصة). */
 export function hash32(str) {
   let h = 0x811c9dc5;
@@ -111,7 +118,7 @@ function dayPartGreeting(fireAt) {
  * settings: من organizer-settings.js (display_name, voice_reminders_enabled, premium_active).
  */
 export function buildVoiceText(event, ctx, settings) {
-  if (!event || event.entity_kind !== "reminder") return null;
+  if (!event || (event.entity_kind !== "reminder" && event.entity_kind !== "alarm")) return null;
   if (!settings || !settings.voice_reminders_enabled || !settings.premium_active) return null;
   const voiceEnabled = resolveVoiceEnabled(ctx && ctx.voiceEnabled, settings.voice_reminders_enabled);
   if (!voiceEnabled) return null;
@@ -119,7 +126,7 @@ export function buildVoiceText(event, ctx, settings) {
   const title = (event.title || "").trim();
   if (!title) return null;
 
-  const templates = DOMAIN_PHRASES[event.domain] || DOMAIN_PHRASES.default;
+  const templates = event.entity_kind === "alarm" ? ALARM_PHRASES : (DOMAIN_PHRASES[event.domain] || DOMAIN_PHRASES.default);
   const key = String(event.event_id || event.dedup_key || title);
   const phrase = templates[hash32(key) % templates.length](title);
 

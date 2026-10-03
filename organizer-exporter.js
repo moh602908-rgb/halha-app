@@ -178,7 +178,7 @@ export async function listDueEvents(now = new Date()) {
  * (لا تخزين للنص)، لتُستهلك من voice-tts-web.js عند لحظة النطق فقط.
  */
 export async function getVoiceTextForEvent(event) {
-  if (!event || event.entity_kind !== "reminder") return null;
+  if (!event || (event.entity_kind !== "reminder" && event.entity_kind !== "alarm")) return null;
   const [settings, entity, occ] = await Promise.all([
     getSettings(), getEntity(event.entity_id), event.source_occ_key ? getOccurrence(event.source_occ_key) : null,
   ]);

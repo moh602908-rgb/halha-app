@@ -4,10 +4,17 @@
    تعمل مع أي صفحة تحمل app-header.js. تستمع لحدث dallini:time-fired الذي تُطلقه voice-tts-web.js بعد حجز الإطلاق
    ذرّيًا، فتظهر للمستخدم حتى لو لم يُمنح إذن الإشعارات (الإشعار الأساسي لا يعتمد عليه وحده).
    Snooze للمنبّه والتذكير فقط (snoozeEntity)؛ لا اسم مستخدم هنا إطلاقًا (Free). لا شبكة، لا استيراد لـ app.js/ask.js/prompt.js/api/.
+
+   نغمة المنبّه (Free): مرتبطة بحالة الرنين نفسها = عناصر هذه الصينية. تعمل ما دام فيها منبّه واحد على الأقل،
+   وتتوقف فورًا عند «غفوة» (قبل انتظار قاعدة البيانات) أو «إيقاف» أو تفكيك الصينية. لا مؤقت ولا مصدر حقيقة ثانٍ:
+   الصينية تتغذى فقط من حدث الإطلاق الذي يحجزه Time Core ذرّيًا، فتكرار tick لا ينشئ نغمتين (start متساوية القوة).
+   إيقاف النغمة/إيقاف الصينية لا يلمس أي بيانات، فلا يفسد الدورة التالية.
+   حدود الويب: النغمة تعمل والصفحة قادرة على التنفيذ فقط (ليست دليلًا على عمل المنبّه بعد إغلاقها).
    ============================================================ */
 
 import { snoozeEntity } from "./organizer-time.js";
 import { FIRED_EVENT_NAME } from "./voice-tts-web.js";
+import { createAlarmTone } from "./alarm-tone.js";
 
 export const SNOOZE_CHOICES = Object.freeze([5, 10, 15]);
 export const TIME_CHANGED_EVENT = "dallini:time-changed";
@@ -36,11 +43,18 @@ function el(tag, attrs = {}, ...children) {
 }
 
 /** يربط الصينية بالحاوية. يعيد دالة تفكيك. */
-export function mountRingTray(container, { win = window } = {}) {
+export function mountRingTray(container, { win = window, tone: toneOverride, snoozeFn = snoozeEntity } = {}) {
   if (!document.getElementById(STYLE_ID)) { const st = el("style", { id: STYLE_ID }); st.textContent = CSS; document.head.appendChild(st); }
   const items = new Map(); // event_id → { event, message }
+  // onChange (استئناف الصوت بعد اللمسة) يحدّث التلميح فقط: إعادة بناء الأزرار بين الضغط والرفع تُضيّع النقرة.
+  const tone = toneOverride || createAlarmTone({ env: win, onChange: () => refreshHint() });
+
+  /** النغمة = دالة في حالة الرنين: تُشغَّل إن وُجد منبّه في الصينية، وتُوقف وإلا. */
+  const ringingAlarm = () => [...items.values()].some((x) => x.event.entity_kind === "alarm");
+  function syncTone() { if (ringingAlarm()) tone.start(); else tone.stop(); }
 
   function render() {
+    syncTone();
     container.innerHTML = "";
     for (const { event, message } of items.values()) {
       const canSnooze = event.entity_kind === "alarm" || event.entity_kind === "reminder";
@@ -57,11 +71,21 @@ export function mountRingTray(container, { win = window } = {}) {
         message ? el("p", { class: "rt-item__msg" }, message) : null,
         actions));
     }
+    refreshHint();
+  }
+
+  /** تلميح الحجب: يُضاف/يُزال وحده دون المساس ببقية العناصر. */
+  function refreshHint() {
+    const existing = container.querySelector('[data-role="tone-hint"]');
+    const need = ringingAlarm() && tone.state() === "blocked";
+    if (need && !existing) container.appendChild(el("p", { class: "rt-item__msg", "data-role": "tone-hint" }, "المتصفح يمنع الصوت قبل لمسة: المس الشاشة لتفعيل نغمة المنبّه."));
+    else if (!need && existing) existing.remove();
   }
 
   async function onSnooze(event, minutes) {
+    if (event.entity_kind === "alarm") tone.stop(); // فورًا عند الضغط؛ إن تعذّر التأجيل يعيد render تشغيلها
     try {
-      const r = await snoozeEntity(event.entity_id, minutes, { originDueAt: Date.parse(event.target_at) });
+      const r = await snoozeFn(event.entity_id, minutes, { originDueAt: Date.parse(event.target_at) });
       if (r.applied) { items.delete(event.event_id); }
       else {
         const slot = items.get(event.event_id);
@@ -82,5 +106,5 @@ export function mountRingTray(container, { win = window } = {}) {
     render();
   };
   win.addEventListener(FIRED_EVENT_NAME, onFired);
-  return () => { win.removeEventListener(FIRED_EVENT_NAME, onFired); container.innerHTML = ""; };
+  return () => { win.removeEventListener(FIRED_EVENT_NAME, onFired); items.clear(); tone.stop(); container.innerHTML = ""; };
 }

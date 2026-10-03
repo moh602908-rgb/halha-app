@@ -119,6 +119,37 @@ export async function notify(event, env = globalThis) {
   return true;
 }
 
+/* ================= اختبار النطق المحلي (Free) ================= */
+
+export const TTS_TEST_PHRASE = "اختبار الصوت. إن سمعت هذه الجملة فالنطق يعمل على جهازك.";
+
+/**
+ * يختبر speechSynthesis المحلي فقط (لا شبكة، لا تخزين). يجب أن يُستدعى من نقرة المستخدم (قيد المتصفح).
+ * يعيد دائمًا: { status, ok, arabicVoice, voices, error? } حيث status ∈
+ *   "unsupported" (لا واجهة نطق) | "ok" (بدأ النطق، وفيه صوت عربي) | "ok_no_arabic" (بدأ النطق لكن بلا صوت عربي مثبّت)
+ *   | "error" (أبلغ المحرك خطأ) | "no_start" (لم يبدأ النطق خلال المهلة: غالبًا لا محرك نطق على الجهاز).
+ */
+export function testSpeech(env = globalThis, { timeoutMs = 4000 } = {}) {
+  const synth = env && env.speechSynthesis;
+  const Utter = env && env.SpeechSynthesisUtterance;
+  if (!synth || typeof Utter !== "function") return Promise.resolve({ status: "unsupported", ok: false, arabicVoice: false, voices: 0 });
+  return new Promise((resolve) => {
+    let settled = false;
+    const voicesInfo = () => {
+      let list = [];
+      try { list = synth.getVoices ? Array.from(synth.getVoices()) : []; } catch { /* تجاهل */ }
+      return { voices: list.length, arabicVoice: list.some((v) => /^ar/i.test(v.lang || "")) };
+    };
+    const done = (status, ok, extra = {}) => { if (settled) return; settled = true; clearTimeout(timer); resolve({ status, ok, ...voicesInfo(), ...extra }); };
+    const u = new Utter(TTS_TEST_PHRASE);
+    u.lang = "ar";
+    u.onstart = () => { const v = voicesInfo(); done(v.arabicVoice ? "ok" : "ok_no_arabic", true); };
+    u.onerror = (ev) => done("error", false, { error: (ev && ev.error) || "unknown" });
+    const timer = setTimeout(() => done("no_start", false), timeoutMs);
+    try { if (synth.cancel) synth.cancel(); synth.speak(u); } catch (e) { done("error", false, { error: String((e && e.message) || e) }); }
+  });
+}
+
 function defaultOnFired(e) {
   if (typeof window !== "undefined" && typeof CustomEvent !== "undefined") {
     window.dispatchEvent(new CustomEvent(FIRED_EVENT_NAME, { detail: e }));
